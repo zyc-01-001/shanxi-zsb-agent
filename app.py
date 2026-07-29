@@ -94,6 +94,7 @@ def knowledge_search():
 
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
     print("=" * 50)
     print("山西统招专升本·计算机大类答疑智能助手")
     print("=" * 50)
@@ -101,6 +102,6 @@ if __name__ == '__main__':
     print(f"知识库条目：{len(agent.kb.knowledge)}")
     print(f"题库题目：{len(agent.question_bank)}")
     print("=" * 50)
-    print("启动服务：http://127.0.0.1:5000")
+    print(f"启动服务：http://0.0.0.0:{port}")
     print("=" * 50)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False)
