@@ -1,0 +1,168 @@
+[
+  {
+    "id": "q_math_001",
+    "subject": "高等数学",
+    "type": "选择题",
+    "question": "lim(x→0) sin(3x)/x 的值为？",
+    "options": ["A. 0", "B. 1", "C. 3", "D. ∞"],
+    "answer": "C",
+    "analysis": "利用第一重要极限：lim(x→0) sin(kx)/x = k\n原式 = lim(x→0) sin(3x)/(3x) × 3 = 1 × 3 = 3"
+  },
+  {
+    "id": "q_math_002",
+    "subject": "高等数学",
+    "type": "选择题",
+    "question": "lim(x→∞) (1+2/x)^x 的值为？",
+    "options": ["A. e", "B. e²", "C. 1", "D. ∞"],
+    "answer": "B",
+    "analysis": "利用第二重要极限：lim(x→∞) (1+1/x)^x = e\n令t=x/2，则x=2t，x→∞时t→∞\n原式 = lim(t→∞) (1+1/t)^(2t) = [lim(t→∞) (1+1/t)^t]² = e²"
+  },
+  {
+    "id": "q_math_003",
+    "subject": "高等数学",
+    "type": "计算题",
+    "question": "求函数 f(x) = x³ - 6x² + 9x + 1 的极值。",
+    "answer": "极大值f(1)=5，极小值f(3)=1",
+    "analysis": "1. 求导：f'(x) = 3x² - 12x + 9 = 3(x²-4x+3) = 3(x-1)(x-3)\n2. 令f'(x)=0得驻点：x=1, x=3\n3. 列表判别：\n   x<1时f'(x)>0（增），1<x<3时f'(x)<0（减），x>3时f'(x)>0（增）\n4. x=1处由增变减 → 极大值，f(1)=1-6+9+1=5\n   x=3处由减变增 → 极小值，f(3)=27-54+27+1=1"
+  },
+  {
+    "id": "q_math_004",
+    "subject": "高等数学",
+    "type": "计算题",
+    "question": "求不定积分 ∫ x·cosx dx",
+    "answer": "x·sinx + cosx + C",
+    "analysis": "用分部积分法：∫u dv = uv - ∫v du\n选u=x（幂函数），dv=cosx dx\n则du=dx，v=sinx\n\n原式 = x·sinx - ∫sinx dx\n     = x·sinx - (-cosx) + C\n     = x·sinx + cosx + C\n\n口诀：反对幂指三，x是幂函数选作u。"
+  },
+  {
+    "id": "q_math_005",
+    "subject": "高等数学",
+    "type": "选择题",
+    "question": "函数 f(x) = |x| 在 x=0 处",
+    "options": ["A. 不连续", "B. 连续且可导", "C. 连续但不可导", "D. 可导但不连续"],
+    "answer": "C",
+    "analysis": "1. 连续性：lim(x→0) |x| = 0 = f(0)，所以连续\n2. 可导性：\n   左导数：lim(x→0-) (|x|-0)/x = lim(x→0-) (-x)/x = -1\n   右导数：lim(x→0+) (|x|-0)/x = lim(x→0+) x/x = 1\n   左右导数不相等，所以不可导\n3. 结论：连续但不可导（经典例子）"
+  },
+  {
+    "id": "q_c_001",
+    "subject": "C语言程序设计",
+    "type": "程序阅读题",
+    "question": "以下程序的输出结果是？\n\nint x = 5, y = 10;\nif (x > 0 && y++ > 5) {\n    printf(\"%d %d\", x, y);\n} else {\n    printf(\"%d %d\", x, y);\n}",
+    "answer": "5 11",
+    "analysis": "1. x=5, y=10\n2. 判断 x>0 && y++>5：\n   - x>0为真(5>0)，继续判断右侧\n   - y++>5：先使用y=10判断10>5为真，然后y变为11\n   - 整个条件为真，执行if分支\n3. 输出 x=5, y=11\n\n注意：&&不会短路（因为左边为真），所以y++会执行。"
+  },
+  {
+    "id": "q_c_002",
+    "subject": "C语言程序设计",
+    "type": "程序阅读题",
+    "question": "以下程序的输出结果是？\n\nint a = 1;\nswitch(a) {\n    case 1: printf(\"A\");\n    case 2: printf(\"B\");\n    case 3: printf(\"C\"); break;\n    default: printf(\"D\");\n}",
+    "answer": "ABC",
+    "analysis": "1. a=1，匹配case 1\n2. 执行printf(\"A\")输出A\n3. 没有break，继续执行case 2，输出B\n4. 仍然没有break，继续执行case 3，输出C\n5. case 3后有break，跳出switch\n6. 最终输出：ABC\n\n这是switch语句case穿透的经典例子。"
+  },
+  {
+    "id": "q_c_003",
+    "subject": "C语言程序设计",
+    "type": "程序阅读题",
+    "question": "以下程序的输出结果是？\n\nint fun(int x) {\n    static int s = 0;\n    s += x;\n    return s;\n}\nint main() {\n    printf(\"%d \", fun(3));\n    printf(\"%d \", fun(5));\n    printf(\"%d\", fun(2));\n}",
+    "answer": "3 8 10",
+    "analysis": "static变量只初始化一次，后续调用保留上次值：\n1. 第一次调用fun(3)：s=0+3=3，返回3\n2. 第二次调用fun(5)：s=3+5=8，返回8\n3. 第三次调用fun(2)：s=8+2=10，返回10\n\n注意：static变量s只在第一次调用时初始化为0，之后保留上次的值。"
+  },
+  {
+    "id": "q_c_004",
+    "subject": "C语言程序设计",
+    "type": "编程题",
+    "question": "编写程序：输入10个整数，用冒泡排序按从小到大排序后输出。",
+    "answer": "冒泡排序",
+    "analysis": "冒泡排序核心思想：相邻元素比较交换，每轮把最大值冒到最后。",
+    "code": "#include <stdio.h>\nint main() {\n    int a[10], i, j, temp;\n    // 输入10个整数\n    for (i = 0; i < 10; i++) {\n        scanf(\"%d\", &a[i]);\n    }\n    // 冒泡排序\n    for (i = 0; i < 9; i++) {         // 外层控制轮数\n        for (j = 0; j < 9 - i; j++) { // 内层控制比较\n            if (a[j] > a[j+1]) {      // 相邻比较\n                temp = a[j];          // 交换\n                a[j] = a[j+1];\n                a[j+1] = temp;\n            }\n        }\n    }\n    // 输出结果\n    for (i = 0; i < 10; i++) {\n        printf(\"%d \", a[i]);\n    }\n    return 0;\n}"
+  },
+  {
+    "id": "q_c_005",
+    "subject": "C语言程序设计",
+    "type": "编程题",
+    "question": "编写程序：用函数实现两个变量值的交换（用指针）。",
+    "answer": "使用指针参数实现交换",
+    "analysis": "值传递无法改变实参，必须用地址传递（指针）。",
+    "code": "#include <stdio.h>\n// 交换函数（地址传递）\nvoid swap(int *a, int *b) {\n    int temp;\n    temp = *a;\n    *a = *b;\n    *b = temp;\n}\nint main() {\n    int x = 3, y = 5;\n    printf(\"交换前：x=%d, y=%d\\n\", x, y);\n    swap(&x, &y);  // 传地址\n    printf(\"交换后：x=%d, y=%d\\n\", x, y);\n    return 0;\n}"
+  },
+  {
+    "id": "q_c_006",
+    "subject": "C语言程序设计",
+    "type": "选择题",
+    "question": "以下程序的输出结果是？\n\nchar s[] = \"hello\";\nprintf(\"%d %d\", strlen(s), sizeof(s));",
+    "options": ["A. 5 5", "B. 5 6", "C. 6 6", "D. 6 5"],
+    "answer": "B",
+    "analysis": "1. strlen(s)求字符串长度，不含'\\0'，所以是5\n2. sizeof(s)求数组占用的字节数，包含'\\0'，所以是6\n3. \"hello\"有5个字符，加上自动添加的'\\0'共占6字节\n\nstrlen和sizeof的区别：strlen不算\\0，sizeof算\\0。"
+  },
+  {
+    "id": "q_eng_001",
+    "subject": "公共英语",
+    "type": "选择题",
+    "question": "It is no use ______ about it. You'd better accept the fact.",
+    "options": ["A. to complain", "B. complaining", "C. complain", "D. complained"],
+    "answer": "B",
+    "analysis": "考查固定句型：It is no use doing sth（做某事是没用的）。\n这个句型要求用动名词（doing）形式。\n句意：抱怨这件事是没用的，你最好接受这个事实。"
+  },
+  {
+    "id": "q_eng_002",
+    "subject": "公共英语",
+    "type": "选择题",
+    "question": "______ he had enough money, he refused to buy that expensive car.",
+    "options": ["A. Although", "B. Because", "C. Since", "D. If"],
+    "answer": "A",
+    "analysis": "考查连词辨析。\n- Although：虽然（引导让步状语从句）\n- Because：因为（引导原因状语从句）\n- Since：既然\n- If：如果\n\n句意：虽然他有足够的钱，但他拒绝买那辆昂贵的车。\n前后是让步关系，用Although。"
+  },
+  {
+    "id": "q_eng_003",
+    "subject": "公共英语",
+    "type": "选择题",
+    "question": "If I ______ you, I would not do that.",
+    "options": ["A. am", "B. was", "C. were", "D. be"],
+    "answer": "C",
+    "analysis": "考查虚拟语气。\n与现在相反的虚拟条件句：If + 主语 + 过去式（be动词统一用were），主句用would+动词原形。\n句意：如果我是你，我不会那样做。\n注意：虚拟语气中be动词统一用were，不用was。"
+  },
+  {
+    "id": "q_eng_004",
+    "subject": "公共英语",
+    "type": "选择题",
+    "question": "Never ______ such a beautiful sunset before.",
+    "options": ["A. I have seen", "B. have I seen", "C. I saw", "D. did I see"],
+    "answer": "B",
+    "analysis": "考查倒装句。\n否定词Never放句首，引起部分倒装（助动词have提到主语I前面）。\n正常语序：I have never seen...\n倒装语序：Never have I seen...\n注意：用现在完成时have seen，因为before暗示到现在为止的经验。"
+  },
+  {
+    "id": "q_cs_001",
+    "subject": "计算机基础",
+    "type": "选择题",
+    "question": "计算机系统中，用于表示数据的最小单位是？",
+    "options": ["A. 字节", "B. 位", "C. 字", "D. 兆字节"],
+    "answer": "B",
+    "analysis": "位（bit）是计算机中表示数据的最小单位，由0和1组成。\n字节（Byte）是基本存储单位，1Byte = 8bit。\n1KB = 1024B，1MB = 1024KB。"
+  },
+  {
+    "id": "q_cs_002",
+    "subject": "计算机基础",
+    "type": "选择题",
+    "question": "十六进制数 1A 等于十进制数？",
+    "options": ["A. 10", "B. 24", "C. 26", "D. 30"],
+    "answer": "C",
+    "analysis": "十六进制转十进制：按权展开求和\n1A = 1×16¹ + A×16⁰ = 1×16 + 10×1 = 16+10 = 26\n注意：A在十六进制中表示10。"
+  },
+  {
+    "id": "q_cs_003",
+    "subject": "计算机基础",
+    "type": "选择题",
+    "question": "OSI参考模型中，哪一层负责数据的物理传输？",
+    "options": ["A. 应用层", "B. 传输层", "C. 网络层", "D. 物理层"],
+    "answer": "D",
+    "analysis": "OSI七层模型从下到上：\n1.物理层-传输原始比特流\n2.数据链路层-帧传输\n3.网络层-IP协议，路由\n4.传输层-TCP/UDP\n5.会话层\n6.表示层\n7.应用层\n物理层是最低层，负责在物理介质上传输原始比特流。"
+  },
+  {
+    "id": "q_cs_004",
+    "subject": "计算机基础",
+    "type": "选择题",
+    "question": "IPv4地址由多少位二进制数组成？",
+    "options": ["A. 16位", "B. 32位", "C. 64位", "D. 128位"],
+    "answer": "B",
+    "analysis": "IPv4地址由32位二进制数组成，通常表示为4个十进制数（每段0-255），如192.168.1.1。\nIPv6地址由128位组成。\n注意区分IPv4和IPv6的位数。"
+  }
+]

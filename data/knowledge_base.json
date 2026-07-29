@@ -1,0 +1,326 @@
+[
+  {
+    "id": "math_001",
+    "subject": "高等数学",
+    "title": "两个重要极限",
+    "keywords": ["极限", "重要极限", "sinx/x", "重要极限公式"],
+    "tags": ["高频考点", "必背公式"],
+    "content": "第一重要极限：lim(x→0) sinx/x = 1\n推论：lim(x→0) tanx/x = 1，lim(x→0) arcsinx/x = 1，lim(x→0) arctanx/x = 1\n\n第二重要极限：lim(x→∞) (1+1/x)^x = e\n变形：lim(x→0) (1+x)^(1/x) = e",
+    "easy_mistakes": "1. 第二重要极限必须是1+无穷小的无穷大次方形式\n2. 注意变量要一致，如果x→0则用(1+x)^(1/x)，如果x→∞则用(1+1/x)^x"
+  },
+  {
+    "id": "math_002",
+    "subject": "高等数学",
+    "title": "等价无穷小替换",
+    "keywords": ["等价无穷小", "无穷小", "替换", "求极限"],
+    "tags": ["高频考点", "必背公式", "易错"],
+    "content": "x→0时常用的等价无穷小：\n- sinx ~ x\n- tanx ~ x\n- arcsinx ~ x\n- arctanx ~ x\n- 1-cosx ~ x²/2\n- ln(1+x) ~ x\n- e^x - 1 ~ x\n- a^x - 1 ~ x·lna\n- (1+x)^a - 1 ~ ax\n- x - sinx ~ x³/6",
+    "easy_mistakes": "等价无穷小替换只能用于乘除运算，不能用于加减运算！\n例如：lim(x→0) (tanx - sinx)/x³ 不能直接替换成 (x-x)/x³=0，这是错误的。"
+  },
+  {
+    "id": "math_003",
+    "subject": "高等数学",
+    "title": "基本求导公式",
+    "keywords": ["求导", "导数", "导数公式", "基本公式"],
+    "tags": ["高频考点", "必背公式"],
+    "content": "基本求导公式：\n- (c)' = 0\n- (x^a)' = a·x^(a-1)\n- (a^x)' = a^x·lna，特别地 (e^x)' = e^x\n- (loga x)' = 1/(x·lna)，特别地 (lnx)' = 1/x\n- (sinx)' = cosx\n- (cosx)' = -sinx\n- (tanx)' = sec²x\n- (cotx)' = -csc²x\n- (secx)' = secx·tanx\n- (cscx)' = -cscx·cotx\n- (arcsinx)' = 1/√(1-x²)\n- (arccosx)' = -1/√(1-x²)\n- (arctanx)' = 1/(1+x²)\n- (arccotx)' = -1/(1+x²)",
+    "easy_mistakes": "1. (sinx)' = cosx，但(cosx)' = -sinx，注意负号\n2. (arcsinx)'和(arccosx)'差一个负号\n3. 复合函数求导要用链式法则，不要漏层"
+  },
+  {
+    "id": "math_004",
+    "subject": "高等数学",
+    "title": "复合函数求导（链式法则）",
+    "keywords": ["复合函数", "链式法则", "求导", "嵌套"],
+    "tags": ["高频考点", "解题技巧"],
+    "content": "链式法则：如果 y = f(u)，u = g(x)，则 dy/dx = f'(u)·g'(x)\n\n步骤：\n1. 分清复合层次，从外到内逐层求导\n2. 每层求导后乘以内层的导数\n3. 最后化简\n\n例：y = sin(x²)\n- 外层：sin(u)，导数cos(u)\n- 内层：u = x²，导数2x\n- 结果：y' = cos(x²)·2x",
+    "easy_mistakes": "最常见的错误是漏层！比如 sin(x²) 只写成 cos(x²) 而忘了乘2x。"
+  },
+  {
+    "id": "math_005",
+    "subject": "高等数学",
+    "title": "洛必达法则",
+    "keywords": ["洛必达", "洛必达法则", "未定式", "0/0", "∞/∞"],
+    "tags": ["高频考点", "解题技巧"],
+    "content": "洛必达法则用于求未定式极限：\n\n0/0型或∞/∞型：\nlim f(x)/g(x) = lim f'(x)/g'(x)\n\n使用条件：\n1. 必须是0/0型或∞/∞型\n2. 分子分母分别求导后的极限存在或为∞\n3. 可以连续使用，直到不是未定式为止",
+    "easy_mistakes": "1. 不是0/0或∞/∞型不能用洛必达！\n2. 每次用完洛必达后要检查是否还是未定式\n3. 分子分母分别求导，不是对整个分数求导"
+  },
+  {
+    "id": "math_006",
+    "subject": "高等数学",
+    "title": "基本积分公式",
+    "keywords": ["积分", "不定积分", "积分公式", "基本公式"],
+    "tags": ["高频考点", "必背公式"],
+    "content": "基本积分公式：\n- ∫0 dx = C\n- ∫x^a dx = x^(a+1)/(a+1) + C（a≠-1）\n- ∫1/x dx = lnx + C\n- ∫a^x dx = a^x/lna + C\n- ∫e^x dx = e^x + C\n- ∫sinx dx = -cosx + C\n- ∫cosx dx = sinx + C\n- ∫sec²x dx = tanx + C\n- ∫csc²x dx = -cotx + C\n- ∫1/(1+x²) dx = arctanx + C\n- ∫1/√(1-x²) dx = arcsinx + C",
+    "easy_mistakes": "1. 积分是求导的逆运算，注意符号变化\n2. ∫sinx dx = -cosx + C，别忘了负号和常数C\n3. ∫1/x dx = lnx + C，注意加绝对值"
+  },
+  {
+    "id": "math_007",
+    "subject": "高等数学",
+    "title": "分部积分法",
+    "keywords": ["分部积分", "积分方法", "∫u dv"],
+    "tags": ["高频考点", "解题技巧"],
+    "content": "分部积分公式：∫u dv = uv - ∫v du\n\n选择u的口诀：反对幂指三（优先级从高到低）\n- 反三角函数\n- 对数函数\n- 幂函数\n- 指数函数\n- 三角函数\n\n例：∫x·e^x dx\n- 选u=x，dv=e^x dx\n- du=dx，v=e^x\n- = x·e^x - ∫e^x dx = x·e^x - e^x + C",
+    "easy_mistakes": "选错u会导致越积越复杂。记住：反对幂指三，排在前面的选作u。"
+  },
+  {
+    "id": "math_008",
+    "subject": "高等数学",
+    "title": "变上限积分求导",
+    "keywords": ["变上限积分", "求导", "牛顿莱布尼兹"],
+    "tags": ["高频考点"],
+    "content": "变上限积分：F(x) = ∫(a到x) f(t) dt\n则 F'(x) = f(x)\n\n推广：如果上限是g(x)，则\nF(x) = ∫(a到g(x)) f(t) dt\nF'(x) = f(g(x))·g'(x)\n\n牛顿-莱布尼兹公式：\n∫(a到b) f(x) dx = F(b) - F(a)\n其中F(x)是f(x)的一个原函数",
+    "easy_mistakes": "变上限积分求导时，如果上限不是x而是x的函数，要乘以上限函数的导数（链式法则）。"
+  },
+  {
+    "id": "math_009",
+    "subject": "高等数学",
+    "title": "中值定理",
+    "keywords": ["中值定理", "罗尔定理", "拉格朗日", "证明"],
+    "tags": ["高频考点", "证明题"],
+    "content": "罗尔定理：f(x)在[a,b]连续，(a,b)可导，f(a)=f(b)，则存在ξ∈(a,b)使f'(ξ)=0\n\n拉格朗日中值定理：f(x)在[a,b]连续，(a,b)可导，则存在ξ∈(a,b)使f'(ξ)=(f(b)-f(a))/(b-a)\n\n柯西中值定理：f(x),g(x)在[a,b]连续，(a,b)可导，g'(x)≠0，则存在ξ使(f(b)-f(a))/(g(b)-g(a))=f'(ξ)/g'(ξ)",
+    "easy_mistakes": "1. 三个条件缺一不可：闭区间连续、开区间可导、端点值相等（罗尔）\n2. 证明题关键是构造合适的辅助函数"
+  },
+  {
+    "id": "math_010",
+    "subject": "高等数学",
+    "title": "一阶线性微分方程",
+    "keywords": ["微分方程", "一阶线性", "通解公式"],
+    "tags": ["高频考点"],
+    "content": "一阶线性微分方程标准形式：y' + P(x)y = Q(x)\n\n通解公式：\ny = e^(-∫P dx) · [∫Q·e^(∫P dx)dx + C]\n\n步骤：\n1. 化为标准形式y' + P(x)y = Q(x)\n2. 找出P(x)和Q(x)\n3. 套公式\n4. 化简",
+    "easy_mistakes": "套公式时P和Q不要搞混。标准形式是y'+P(x)y=Q(x)，如果方程是y'-2y=3，则P=-2, Q=3。"
+  },
+  {
+    "id": "math_011",
+    "subject": "高等数学",
+    "title": "泰勒公式（麦克劳林展开）",
+    "keywords": ["泰勒", "麦克劳林", "级数展开", "幂级数"],
+    "tags": ["高频考点", "必背公式"],
+    "content": "常见麦克劳林展开（x=0处）：\n- e^x = 1 + x + x²/2! + x³/3! + ... = Σ(x^n/n!)，x∈R\n- sinx = x - x³/3! + x⁵/5! - ...，x∈R\n- cosx = 1 - x²/2! + x⁴/4! - ...，x∈R\n- ln(1+x) = x - x²/2 + x³/3 - ...，x∈(-1,1]\n- 1/(1-x) = 1 + x + x² + ...，x∈(-1,1)\n- (1+x)^a = 1 + ax + a(a-1)x²/2! + ...，x∈(-1,1)",
+    "easy_mistakes": "注意收敛区间！e^x、sinx、cosx在R上收敛，ln(1+x)在(-1,1]收敛，1/(1-x)在(-1,1)收敛。"
+  },
+  {
+    "id": "math_012",
+    "subject": "高等数学",
+    "title": "函数单调性与极值",
+    "keywords": ["单调性", "极值", "极大值", "极小值"],
+    "tags": ["高频考点"],
+    "content": "单调性判别：\n- f'(x) > 0 → 单调递增\n- f'(x) < 0 → 单调递减\n\n极值的必要条件：f'(x₀)=0 或 f'(x₀)不存在\n\n极值第一充分条件：\n- x过x₀时f'由正变负 → 极大值\n- x过x₀时f'由负变正 → 极小值\n- f'不变号 → 不是极值\n\n极值第二充分条件：\n- f'(x₀)=0且f''(x₀)<0 → 极大值\n- f'(x₀)=0且f''(x₀)>0 → 极小值",
+    "easy_mistakes": "1. 不要忘记检查f'(x)不存在的点\n2. 第一充分条件要看导数在x₀左右两侧的符号变化\n3. f'(x₀)=0不一定就是极值点"
+  },
+  {
+    "id": "c_001",
+    "subject": "C语言程序设计",
+    "title": "数据类型与字节数",
+    "keywords": ["数据类型", "int", "char", "float", "double", "字节"],
+    "tags": ["高频考点", "基础"],
+    "content": "C语言基本数据类型及字节数：\n- int（整型）：4字节\n- short（短整型）：2字节\n- long（长整型）：4字节\n- float（单精度）：4字节，约6-7位有效数字\n- double（双精度）：8字节，约15-16位有效数字\n- char（字符型）：1字节\n\n常量后缀：L（长整型）、U（无符号）、F（float）\n进制前缀：0（八进制）、0x（十六进制）",
+    "easy_mistakes": "1. char是1字节，不是2字节\n2. float和double的有效数字位数不同\n3. 八进制前缀是0（数字零），不是字母O"
+  },
+  {
+    "id": "c_002",
+    "subject": "C语言程序设计",
+    "title": "运算符优先级",
+    "keywords": ["运算符", "优先级", "表达式", "求值"],
+    "tags": ["高频考点", "易错"],
+    "content": "运算符优先级（从高到低）：\n1. () [] -> .\n2. ! ~ ++ -- -(负号) * & sizeof\n3. * / %\n4. + -\n5. << >>\n6. < <= > >=\n7. == !=\n8. & ^ |\n9. &&\n10. ||\n11. ?:\n12. = += -= 等\n13. ,",
+    "easy_mistakes": "1. = 是赋值，== 是判断相等\n2. &&（逻辑与）优先级高于||（逻辑或）\n3. 后置++优先级高于前置++\n4. 逗号运算符优先级最低"
+  },
+  {
+    "id": "c_003",
+    "subject": "C语言程序设计",
+    "title": "自增自减运算符",
+    "keywords": ["自增", "自减", "++", "--", "前置", "后置"],
+    "tags": ["高频考点", "易错"],
+    "content": "前置++/--：先变后用\n- ++a：先加1，再使用a的新值\n- --a：先减1，再使用a的新值\n\n后置++/--：先用后变\n- a++：先使用a的当前值，再加1\n- a--：先使用a的当前值，再减1\n\n例：int a=5;\n- b = ++a; → a=6, b=6\n- b = a++; → a=6, b=5",
+    "easy_mistakes": "1. 前置和后置的区别在表达式中体现\n2. 不要在同一个表达式中对同一个变量多次自增，行为未定义\n3. *p++ 和 (*p)++ 含义不同"
+  },
+  {
+    "id": "c_004",
+    "subject": "C语言程序设计",
+    "title": "逻辑运算短路特性",
+    "keywords": ["逻辑运算", "短路", "&&", "||", "条件"],
+    "tags": ["高频考点", "易错"],
+    "content": "短路特性：\n- &&（逻辑与）：左边为假(0)时，右边不执行\n- ||（逻辑或）：左边为真(非0)时，右边不执行\n\n例1：int a=0, b=5;\n  (a>0) && (b++) → a>0为假，b++不执行，b仍为5\n\n例2：int a=1, b=5;\n  (a>0) || (b++) → a>0为真，b++不执行，b仍为5\n\n这个特性常在程序阅读题中考查。",
+    "easy_mistakes": "短路特性影响右侧表达式的执行，如果有自增自减运算，要注意变量值是否改变。"
+  },
+  {
+    "id": "c_005",
+    "subject": "C语言程序设计",
+    "title": "switch语句与break",
+    "keywords": ["switch", "case", "break", "穿透"],
+    "tags": ["高频考点", "易错"],
+    "content": "switch语句格式：\nswitch(表达式) {\n  case 常量1: 语句; break;\n  case 常量2: 语句; break;\n  default: 语句;\n}\n\nbreak的作用：跳出switch结构。\n如果不加break，会继续执行下一个case的语句，这叫case穿透。",
+    "easy_mistakes": "1. case后必须是常量表达式，不能是变量\n2. 忘加break导致穿透是常见考点\n3. default可以省略，但建议加上\n4. switch表达式必须是整型或字符型"
+  },
+  {
+    "id": "c_006",
+    "subject": "C语言程序设计",
+    "title": "一维数组",
+    "keywords": ["数组", "一维数组", "下标", "初始化"],
+    "tags": ["高频考点", "基础"],
+    "content": "定义：int a[10];\n初始化：\n- int a[5] = {1,2,3,4,5};\n- int a[] = {1,2,3}; （自动确定大小为3）\n- int a[5] = {1,2}; （其余自动初始化为0）\n\n引用：下标从0开始，a[0]到a[n-1]\n\n数组名代表首地址，a等价于&a[0]",
+    "easy_mistakes": "1. 下标从0开始，最大下标是n-1\n2. 数组大小必须是常量或常量表达式\n3. 数组名是地址常量，不能赋值"
+  },
+  {
+    "id": "c_007",
+    "subject": "C语言程序设计",
+    "title": "字符数组与字符串",
+    "keywords": ["字符数组", "字符串", "\\0", "strlen", "strcpy"],
+    "tags": ["高频考点"],
+    "content": "字符串以'\\0'结尾。\n\n字符数组vs字符串：\n- char s[5] = {'a','b','c'}; 不是字符串（没有\\0）\n- char s[] = \"abc\"; 是字符串（自动加\\0，大小为4）\n\n常用字符串函数（需#include <string.h>）：\n- strlen(s)：求长度（不含\\0）\n- strcpy(s1,s2)：s2复制到s1\n- strcat(s1,s2)：s2接到s1后\n- strcmp(s1,s2)：比较（0相等，>0前大，<0前小）",
+    "easy_mistakes": "1. 字符数组大小要比字符串长度多1（存\\0）\n2. scanf(\"%s\")遇空格结束，读不了含空格的字符串\n3. strlen和sizeof不同：strlen不算\\0，sizeof算\\0"
+  },
+  {
+    "id": "c_008",
+    "subject": "C语言程序设计",
+    "title": "函数参数传递：值传递vs地址传递",
+    "keywords": ["函数", "参数传递", "值传递", "地址传递", "指针参数"],
+    "tags": ["高频考点", "易错"],
+    "content": "值传递：实参的值复制给形参，形参改变不影响实参。\n地址传递：传递变量的地址，形参改变会影响实参。\n数组传递：数组名作为参数，传递的是首地址。\n\n例：\nvoid swap1(int a, int b) { int t=a; a=b; b=t; }  // 值传递，不改变实参\nvoid swap2(int *a, int *b) { int t=*a; *a=*b; *b=t; }  // 地址传递，改变实参",
+    "easy_mistakes": "1. 值传递不会修改实参，这是程序阅读题最常考的点\n2. 数组名传参本质是地址传递，函数内修改数组元素会影响原数组\n3. scanf中变量要加&取地址，但数组名不需要"
+  },
+  {
+    "id": "c_009",
+    "subject": "C语言程序设计",
+    "title": "指针基础",
+    "keywords": ["指针", "地址", "&", "*", "指针变量"],
+    "tags": ["高频考点", "重点难点"],
+    "content": "指针变量：存放地址的变量。\n定义：int *p;\n赋值：p = &a; （取地址）\n引用：*p 表示p指向的变量的值（间接访问）\n\n两个运算符：\n- &：取地址\n- *：取内容（间接访问）\n\n指针与数组：\nint a[10], *p; p = a;\n则 p+i 指向 a[i]，*(p+i) 等价于 a[i]",
+    "easy_mistakes": "1. 指针必须先赋值再使用，未赋值的指针是野指针\n2. 指针加减以数据类型大小为单位，p+1不是地址+1而是+sizeof(int)\n3. *p++ 和 (*p)++ 不同：前者先取值后p++，后者先取值再给值加1"
+  },
+  {
+    "id": "c_010",
+    "subject": "C语言程序设计",
+    "title": "指针与二维数组",
+    "keywords": ["二维数组", "指针", "数组指针", "*(*(a+i)+j)"],
+    "tags": ["高频考点", "难点"],
+    "content": "二维数组a[m][n]的地址表示：\n- a[i][j]的地址：*(a+i)+j 或 a[i]+j\n- a[i][j]的值：*(*(a+i)+j)\n\n理解：\n- a是行指针，a+1指向下一行\n- a[i]是列指针，a[i]+1指向下一列\n- *(a+i)把行指针转为列指针",
+    "easy_mistakes": "1. a+i和a[i]虽然值相同但类型不同\n2. 指针数组int *p[10]和数组指针int (*p)[10]不同\n3. 二维数组名是行指针，不是简单的列指针"
+  },
+  {
+    "id": "c_011",
+    "subject": "C语言程序设计",
+    "title": "static静态变量",
+    "keywords": ["static", "静态变量", "局部变量", "作用域"],
+    "tags": ["高频考点"],
+    "content": "static修饰局部变量：\n- 函数调用结束后不释放内存\n- 下次调用时保留上次的值\n- 只在第一次调用时初始化\n\n例：\nint count() {\n  static int n = 0;\n  n++;\n  return n;\n}\n第一次调用返回1，第二次返回2，第三次返回3...",
+    "easy_mistakes": "1. static变量只初始化一次，不是每次调用都初始化\n2. static全局变量限制在本文件内使用\n3. static局部变量存在静态存储区，不是栈"
+  },
+  {
+    "id": "c_012",
+    "subject": "C语言程序设计",
+    "title": "宏定义",
+    "keywords": ["宏定义", "#define", "预处理", "宏替换"],
+    "tags": ["高频考点", "易错"],
+    "content": "不带参数：#define PI 3.14159\n带参数：#define SQR(x) ((x)*(x))\n\n宏只是简单文本替换，在编译前处理。\n\n例：\n#define SQR(x) x*x\nSQR(3+2) → 3+2*3+2 = 11（错误！）\n\n正确写法：\n#define SQR(x) ((x)*(x))\nSQR(3+2) → ((3+2)*(3+2)) = 25",
+    "easy_mistakes": "1. 宏定义不加分号\n2. 带参宏的参数一定要加括号\n3. 宏替换是纯文本替换，不考虑运算优先级\n4. 宏和函数不同：宏没有类型检查，不做计算"
+  },
+  {
+    "id": "c_013",
+    "subject": "C语言程序设计",
+    "title": "结构体",
+    "keywords": ["结构体", "struct", "成员", "结构体指针"],
+    "tags": ["高频考点"],
+    "content": "定义：\nstruct Student {\n  int id;\n  char name[20];\n  float score;\n};\n\n变量定义：struct Student s1;\n初始化：struct Student s1 = {1, \"张三\", 90.5};\n成员引用：s1.id, s1.name\n\n结构体指针：\nstruct Student *p = &s1;\n通过指针引用成员：p->id 或 (*p).id",
+    "easy_mistakes": "1. struct和union不同：struct各成员独立内存，union共用内存\n2. 结构体指针用->，结构体变量用.\n3. typedef可以简化结构体类型名"
+  },
+  {
+    "id": "c_014",
+    "subject": "C语言程序设计",
+    "title": "文件操作",
+    "keywords": ["文件", "fopen", "fclose", "fread", "fwrite", "FILE"],
+    "tags": ["高频考点"],
+    "content": "文件操作步骤：打开→读写→关闭\n\n打开：FILE *fp = fopen(\"文件名\", \"打开方式\");\n打开方式：\n- \"r\"：只读（文件须存在）\n- \"w\"：只写（覆盖，不存在则创建）\n- \"a\"：追加\n- 加\"b\"表示二进制\n\n关闭：fclose(fp);\n\n读写函数：\n- fgetc/fputc：读/写一个字符\n- fgets/fputs：读/写字符串\n- fscanf/fprintf：格式化读/写\n- fread/fwrite：读/写数据块",
+    "easy_mistakes": "1. 打开文件后要检查是否成功：if(fp==NULL)\n2. 使用完要关闭文件\n3. \"r\"和\"w\"不要搞混，\"r\"要求文件必须存在"
+  },
+  {
+    "id": "eng_001",
+    "subject": "公共英语",
+    "title": "时态总结",
+    "keywords": ["时态", "现在时", "过去时", "完成时", "进行时"],
+    "tags": ["高频考点"],
+    "content": "常考时态：\n- 一般现在时：do/does（习惯、事实）\n- 一般过去时：did（过去发生的动作）\n- 一般将来时：will do / be going to do\n- 现在进行时：am/is/are doing（正在发生）\n- 过去进行时：was/were doing（过去某时正在发生）\n- 现在完成时：have/has done（过去发生对现在有影响）\n- 过去完成时：had done（过去某时之前已完成）\n\n被动语态：be + done",
+    "easy_mistakes": "1. 现在完成时vs一般过去时：现在完成时强调对现在的影响\n2. 过去完成时必须有过去的参照时间\n3. 现在进行时不能用于表示状态（如know, love等状态动词）"
+  },
+  {
+    "id": "eng_002",
+    "subject": "公共英语",
+    "title": "非谓语动词",
+    "keywords": ["非谓语", "不定式", "动名词", "分词", "to do", "doing"],
+    "tags": ["高频考点", "易错"],
+    "content": "不定式（to do）：\n常见搭配：want to do, decide to do, hope to do, refuse to do\n\n动名词（doing）：\n常见搭配：enjoy doing, finish doing, mind doing, avoid doing\n\n分词：\n- 现在分词（doing）：表主动、进行\n- 过去分词（done）：表被动、完成\n\n常见考点：\n- It is no use doing sth（固定句型，用doing）\n- stop to do（停下来去做）/ stop doing（停止做）",
+    "easy_mistakes": "1. to do和doing的搭配不同，需要记忆\n2. stop to do和stop doing意思完全相反\n3. 分词作定语：现在分词表主动，过去分词表被动"
+  },
+  {
+    "id": "eng_003",
+    "subject": "公共英语",
+    "title": "定语从句",
+    "keywords": ["定语从句", "关系代词", "that", "which", "who", "关系副词"],
+    "tags": ["高频考点"],
+    "content": "关系代词：\n- who（人，作主语）\n- whom（人，作宾语）\n- whose（表所属）\n- which（物）\n- that（人或物）\n\n关系副词：\n- when（时间）\n- where（地点）\n- why（原因）\n\n只能用that的情况：\n1. 先行词是all, everything, anything, nothing等不定代词\n2. 先行词被最高级修饰\n3. 先行词被the only, the very等修饰",
+    "easy_mistakes": "1. that和which在限制性定语从句中常可互换，但有些情况只能用that\n2. 介词+关系代词时只能用which/whom，不能用that\n3. 非限制性定语从句（有逗号）不能用that"
+  },
+  {
+    "id": "eng_004",
+    "subject": "公共英语",
+    "title": "虚拟语气",
+    "keywords": ["虚拟语气", "if", "would", "wish", "假设"],
+    "tags": ["高频考点", "易错"],
+    "content": "if虚拟条件句：\n与现在相反：If + 过去式, would/should/could/might + do\n  例：If I were you, I would go.\n与过去相反：If + had done, would/should/could/might + have done\n  例：If I had known, I would have helped you.\n与将来相反：If + were to do / should do, would + do\n\nwish后虚拟：\n- wish + 过去式（与现在相反）\n- wish + had done（与过去相反）\n- wish + would do（与将来相反）\n\nIt is (high) time that + 过去式\nwould rather + 过去式",
+    "easy_mistakes": "1. 与现在相反，be动词统一用were\n2. 注意时态对应：条件句和主句的时态要匹配\n3. would rather后面的从句用过去式"
+  },
+  {
+    "id": "eng_005",
+    "subject": "公共英语",
+    "title": "倒装句",
+    "keywords": ["倒装", "never", "hardly", "not only", "部分倒装"],
+    "tags": ["高频考点"],
+    "content": "部分倒装（助动词/情态动词提到主语前）：\n否定词放句首时倒装：\n- Never have I seen such a beautiful place.\n- Hardly had he arrived when it started to rain.\n- Not only does he study hard, but he also helps others.\n- Seldom do I go shopping.\n\nOnly放句首时倒装：\n- Only then did I realize my mistake.\n- Only in this way can we solve the problem.",
+    "easy_mistakes": "1. 否定词不在句首时不倒装\n2. 部分倒装只把助动词/情态动词提前，不是全部谓语\n3. Not only...but also结构中，not only后倒装，but also后不倒装"
+  },
+  {
+    "id": "cs_001",
+    "subject": "计算机基础",
+    "title": "计算机发展史",
+    "keywords": ["计算机发展", "ENIAC", "冯诺依曼", "电子管", "晶体管"],
+    "tags": ["高频考点", "基础"],
+    "content": "四代计算机：\n- 第一代：电子管（1946-1958）\n- 第二代：晶体管（1958-1964）\n- 第三代：集成电路（1964-1971）\n- 第四代：大规模/超大规模集成电路（1971-至今）\n\n世界第一台电子计算机：ENIAC（1946年）\n冯·诺依曼体系结构核心：存储程序概念\n首台存储程序计算机：EDVAC",
+    "easy_mistakes": "1. ENIAC是第一台，但不是存储程序的；EDVAC才是首台存储程序计算机\n2. 冯·诺依曼的核心贡献是存储程序概念"
+  },
+  {
+    "id": "cs_002",
+    "subject": "计算机基础",
+    "title": "进制转换",
+    "keywords": ["进制", "二进制", "八进制", "十六进制", "十进制", "转换"],
+    "tags": ["高频考点", "必会"],
+    "content": "二进制→十进制：按权展开求和\n  例：1011 = 1×2³+0×2²+1×2¹+1×2⁰ = 11\n\n十进制→二进制：除2取余倒序排列\n  例：13 → 1101\n\n二进制↔八进制：3位一组\n  例：101 011 → 53（八进制）\n\n二进制↔十六进制：4位一组\n  例：1010 0011 → A3（十六进制）\n\n十六进制后缀H，八进制前缀0",
+    "easy_mistakes": "1. 十进制转二进制余数要倒序排列\n2. 二进制转八/十六进制时位数不够要在高位补0\n3. 十六进制的A-F对应10-15"
+  },
+  {
+    "id": "cs_003",
+    "subject": "计算机基础",
+    "title": "OSI七层模型",
+    "keywords": ["OSI", "七层模型", "网络协议", "TCP", "IP", "HTTP"],
+    "tags": ["高频考点"],
+    "content": "OSI七层模型（从下到上）：\n1. 物理层：传输原始比特流\n2. 数据链路层：帧传输\n3. 网络层：IP协议，路由选择\n4. 传输层：TCP/UDP，端到端传输\n5. 会话层\n6. 表示层\n7. 应用层：HTTP、FTP、SMTP等\n\nTCP/IP协议族：\n- 应用层：HTTP、FTP、SMTP、POP3、DNS\n- 传输层：TCP（可靠）、UDP（快但不可靠）\n- 网络层：IP、ICMP、ARP",
+    "easy_mistakes": "1. TCP是传输层协议，不是网络层\n2. HTTP是应用层协议\n3. IP是网络层协议"
+  },
+  {
+    "id": "cs_004",
+    "subject": "计算机基础",
+    "title": "IP地址",
+    "keywords": ["IP地址", "IPv4", "A类", "B类", "C类", "子网掩码"],
+    "tags": ["高频考点"],
+    "content": "IPv4：32位，分4段，每段0-255\n\nIP地址分类：\n- A类：1.0.0.0 ~ 126.255.255.255（大型网络）\n- B类：128.0.0.0 ~ 191.255.255.255（中型网络）\n- C类：192.0.0.0 ~ 223.255.255.255（小型网络）\n- D类：组播\n- E类：保留\n\nIPv6：128位",
+    "easy_mistakes": "1. 127.x.x.x是回环地址，不属于A类\n2. A类地址范围是1-126，不是0-127\n3. IPv4是32位，IPv6是128位"
+  },
+  {
+    "id": "cs_005",
+    "subject": "计算机基础",
+    "title": "信息安全三要素",
+    "keywords": ["信息安全", "保密性", "完整性", "可用性", "CIA"],
+    "tags": ["高频考点"],
+    "content": "信息安全三要素（CIA）：\n1. 保密性（Confidentiality）：信息不被未授权访问\n2. 完整性（Integrity）：信息不被篡改\n3. 可用性（Availability）：信息可被授权用户访问\n\n常见安全技术：\n- 加密（对称加密、非对称加密）\n- 数字证书\n- 防火墙\n- 杀毒软件",
+    "easy_mistakes": "数据复制性不属于信息安全三要素。三要素是保密性、完整性、可用性。"
+  }
+]

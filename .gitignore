@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+instance/
+.env
+venv/
+.venv/
+GitInstaller.exe
+*.log
+.DS_Store
+Thumbs.db
