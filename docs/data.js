@@ -262,7 +262,7 @@ const KNOWLEDGE_BASE = [
     "title": "结构体",
     "keywords": ["结构体", "struct", "成员", "结构体指针"],
     "tags": ["高频考点"],
-    "content": "**定义：**\n```c\nstruct Student {\n  int id;\n  char name[20];\n  float score;\n};\n```\n\n**变量定义：** `struct Student s1;`\n**初始化：** `struct Student s1 = {1, "张三", 90.5};`\n**成员引用：** `s1.id`, `s1.name`\n\n**结构体指针：**\n```c\nstruct Student *p = &s1;\n// 通过指针引用成员：p->id 或 (*p).id\n```",
+    "content": "**定义：**\n```c\nstruct Student {\n  int id;\n  char name[20];\n  float score;\n};\n```\n\n**变量定义：** `struct Student s1;`\n**初始化：** `struct Student s1 = {1, '张三', 90.5};`\n**成员引用：** `s1.id`, `s1.name`\n\n**结构体指针：**\n```c\nstruct Student *p = &s1;\n// 通过指针引用成员：p->id 或 (*p).id\n```",
     "easy_mistakes": "1. `struct` 和 `union` 不同：struct 各成员独立内存，union 共用内存\n2. 结构体指针用 `->`，结构体变量用 `.`\n3. `typedef` 可以简化结构体类型名"
   },
   {
@@ -271,7 +271,7 @@ const KNOWLEDGE_BASE = [
     "title": "文件操作",
     "keywords": ["文件", "fopen", "fclose", "fread", "fwrite", "FILE"],
     "tags": ["高频考点"],
-    "content": "**文件操作步骤：** 打开 → 读写 → 关闭\n\n**打开：**\n```c\nFILE *fp = fopen("文件名", "打开方式");\n```\n打开方式：\n- `\"r\"`：只读（文件须存在）\n- `\"w\"`：只写（覆盖，不存在则创建）\n- `\"a\"`：追加\n- 加 `\"b\"` 表示二进制\n\n**关闭：** `fclose(fp);`\n\n**读写函数：**\n- `fgetc`/`fputc`：读/写一个字符\n- `fgets`/`fputs`：读/写字符串\n- `fscanf`/`fprintf`：格式化读/写\n- `fread`/`fwrite`：读/写数据块",
+    "content": "**文件操作步骤：** 打开 → 读写 → 关闭\n\n**打开：**\n```c\nFILE *fp = fopen('文件名', '打开方式');\n```\n打开方式：\n- `\"r\"`：只读（文件须存在）\n- `\"w\"`：只写（覆盖，不存在则创建）\n- `\"a\"`：追加\n- 加 `\"b\"` 表示二进制\n\n**关闭：** `fclose(fp);`\n\n**读写函数：**\n- `fgetc`/`fputc`：读/写一个字符\n- `fgets`/`fputs`：读/写字符串\n- `fscanf`/`fprintf`：格式化读/写\n- `fread`/`fwrite`：读/写数据块",
     "easy_mistakes": "1. 打开文件后要检查是否成功：`if (fp == NULL)`\n2. 使用完要关闭文件\n3. `\"r\"` 和 `\"w\"` 不要搞混，`\"r\"` 要求文件必须存在"
   },
   {
