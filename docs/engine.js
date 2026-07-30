@@ -1,124 +1,97 @@
 /**
- * 山西专升本计算机大类 - JavaScript问答引擎
- * 功能：意图识别、知识检索、答案生成、刷题出题
- *
- * 依赖：需要先加载 data.js（EXAM_INFO, KNOWLEDGE_BASE, QUESTION_BANK）
+ * 山西专升本计算机大类 - JavaScript问答引擎 v2.0
+ * 改进：更智能的意图识别、更精准的知识检索、更自然的回答
  */
 
 // ==================== 科目映射 ====================
 const SUBJECT_MAP = {
-  '高数': '高等数学',
-  '数学': '高等数学',
-  '微积分': '高等数学',
-  '极限': '高等数学',
-  '导数': '高等数学',
-  '积分': '高等数学',
-  'c语言': 'C语言程序设计',
-  'c程序': 'C语言程序设计',
-  '编程': 'C语言程序设计',
-  '指针': 'C语言程序设计',
-  '数组': 'C语言程序设计',
-  '函数': 'C语言程序设计',
-  '英语': '公共英语',
-  '词汇': '公共英语',
-  '语法': '公共英语',
-  '计算机基础': '计算机基础',
-  '网络': '计算机基础',
-  '操作系统': '计算机基础',
+  '高数': '高等数学', '数学': '高等数学', '微积分': '高等数学',
+  '极限': '高等数学', '导数': '高等数学', '积分': '高等数学',
+  '微分': '高等数学', '泰勒': '高等数学', '级数': '高等数学',
+  '洛必达': '高等数学', '中值定理': '高等数学',
+  'c语言': 'C语言程序设计', 'c程序': 'C语言程序设计', '编程': 'C语言程序设计',
+  '指针': 'C语言程序设计', '数组': 'C语言程序设计',
+  '函数': 'C语言程序设计', 'switch': 'C语言程序设计',
+  '循环': 'C语言程序设计', '结构体': 'C语言程序设计',
+  '变量': 'C语言程序设计', '运算符': 'C语言程序设计',
+  '英语': '公共英语', '词汇': '公共英语', '语法': '公共英语',
+  '时态': '公共英语', '虚拟语气': '公共英语',
+  '计算机基础': '计算机基础', '网络': '计算机基础',
+  '操作系统': '计算机基础', '进制': '计算机基础',
+  'ip': '计算机基础', 'osi': '计算机基础',
 };
 
 // ==================== 意图关键词 ====================
 const INTENT_PATTERNS = {
-  '刷题': ['刷题', '出题', '练习', '做几道', '考考我', '出几道'],
-  '考试信息': ['考试时间', '分值', '科目', '大纲', '考纲', '题型', '总分'],
-  '知识点': ['什么是', '解释', '讲解', '知识点', '概念', '公式', '怎么算', '怎么求'],
-  '做题': ['求值', '计算', '求极限', '求导', '求积分', '解方程', '运行结果', '输出什么'],
+  '刷题': ['刷题', '出题', '练习', '做几道', '考考我', '出几道', '来几道题'],
+  '考试信息': ['考试时间', '分值', '科目', '大纲', '考纲', '题型', '总分', '考试信息', '考多少分', '多长时间'],
+  '做题': ['求值', '计算', '求极限', '求导', '求积分', '解方程', '运行结果', '输出什么', '输出结果', '结果是'],
+  '知识点': ['什么是', '解释', '讲解', '知识点', '概念', '公式', '怎么算', '怎么求', '怎么用', '是什么', '原理', '方法', '规则', '区别'],
 };
 
-// ==================== 当前题目状态 ====================
 let _currentQuestions = [];
 
-// ==================== 简单中文分词 ====================
+// ==================== 分词 ====================
 function _tokenize(text) {
-  // 移除标点符号，按空白切分
-  const cleaned = text.replace(/[，。、；：？！\s,.;:?!()\[\]{}""''\']+/g, ' ');
-  return cleaned.split(' ').filter(t => t.trim().length > 0);
-}
-
-// ==================== 模糊匹配（类似Python的SequenceMatcher.ratio） ====================
-function _stringRatio(a, b) {
-  if (a.length === 0 && b.length === 0) return 1;
-  if (a.length === 0 || b.length === 0) return 0;
-
-  // 使用最长公共子序列比例作为简易相似度
-  const m = a.length;
-  const n = b.length;
-  const dp = [];
-  for (let i = 0; i <= m; i++) {
-    dp[i] = new Array(n + 1).fill(0);
-  }
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  if (!text) return [];
+  // 移除标点，保留中文、英文、数字、常见符号
+  const cleaned = text.replace(/[，。、；：？！\s,.;:?!()\[\]{}""''']/g, ' ');
+  const tokens = cleaned.split(' ').filter(t => t.trim().length > 0);
+  // 额外提取2字组合用于中文匹配
+  const extraTokens = [];
+  for (const t of tokens) {
+    if (/[\u4e00-\u9fa5]/.test(t) && t.length > 2) {
+      // 提取2-3字的子串
+      for (let i = 0; i < t.length - 1; i++) {
+        extraTokens.push(t.substring(i, i + 2));
       }
     }
   }
-  const lcs = dp[m][n];
-  return lcs / Math.max(m, n);
+  return [...tokens, ...extraTokens];
 }
 
 // ==================== 搜索打分 ====================
 function _score(queryTokens, item) {
-  const title = item.title || '';
-  const keywords = item.keywords || [];
-  const content = item.content || '';
-  const tags = item.tags || [];
+  const title = (item.title || '').toLowerCase();
+  const keywords = (item.keywords || []).map(k => k.toLowerCase());
+  const content = (item.content || '').toLowerCase();
+  const tags = (item.tags || []).map(t => t.toLowerCase());
 
   let score = 0;
-  const allText = (title + ' ' + keywords.join(' ') + ' ' + content + ' ' + tags.join(' ')).toLowerCase();
+  const queryTokensLower = queryTokens.map(t => t.toLowerCase());
 
-  // 关键词精确匹配：+10分
+  // 关键词精确匹配（权重最高）
   for (const kw of keywords) {
-    const kwLower = kw.toLowerCase();
-    for (const qt of queryTokens) {
-      const qtLower = qt.toLowerCase();
-      if (qtLower.includes(kwLower) || kwLower.includes(qtLower)) {
-        score += 10;
+    for (const qt of queryTokensLower) {
+      if (qt === kw || qt.includes(kw) || kw.includes(qt)) {
+        score += 15;
       }
     }
   }
 
-  // 标题匹配：+8分
-  for (const qt of queryTokens) {
-    if (title.toLowerCase().includes(qt.toLowerCase())) {
-      score += 8;
+  // 标题匹配
+  for (const qt of queryTokensLower) {
+    if (title.includes(qt)) {
+      score += 10;
+    }
+    if (qt === title) {
+      score += 10;
     }
   }
 
-  // 内容匹配：+2分
-  for (const qt of queryTokens) {
-    if (content.toLowerCase().includes(qt.toLowerCase())) {
-      score += 2;
-    }
-  }
-
-  // 标签匹配：+5分
-  for (const qt of queryTokens) {
+  // 标签匹配
+  for (const qt of queryTokensLower) {
     for (const tag of tags) {
-      if (tag.toLowerCase().includes(qt.toLowerCase())) {
-        score += 5;
+      if (tag.includes(qt) || qt.includes(tag)) {
+        score += 6;
       }
     }
   }
 
-  // 模糊匹配（ratio>0.5）：+int(ratio*5)
-  for (const qt of queryTokens) {
-    const ratio = _stringRatio(qt, title);
-    if (ratio > 0.5) {
-      score += Math.floor(ratio * 5);
+  // 内容匹配
+  for (const qt of queryTokensLower) {
+    if (content.includes(qt)) {
+      score += 2;
     }
   }
 
@@ -131,13 +104,11 @@ function _searchKnowledge(query, subject, limit) {
   const queryTokens = _tokenize(query);
   if (queryTokens.length === 0) return [];
 
-  // 按科目筛选
   let searchPool = KNOWLEDGE_BASE;
   if (subject) {
     searchPool = searchPool.filter(item => item.subject === subject);
   }
 
-  // 打分
   const results = [];
   for (const item of searchPool) {
     const s = _score(queryTokens, item);
@@ -146,7 +117,6 @@ function _searchKnowledge(query, subject, limit) {
     }
   }
 
-  // 按得分降序排序
   results.sort((a, b) => b.score - a.score);
   return results.slice(0, limit).map(r => r.item);
 }
@@ -154,23 +124,19 @@ function _searchKnowledge(query, subject, limit) {
 // ==================== 格式化知识库结果 ====================
 function _formatKnowledgeResults(items) {
   if (!items || items.length === 0) {
-    return '未找到相关知识点，建议换个关键词搜索，或查阅山西省教育招生考试院官方文件。';
+    return null;
   }
-
   const output = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    output.push(`### ${i + 1}. ${item.title}`);
-    output.push(`**科目**：${item.subject}`);
-    if (item.keywords && item.keywords.length > 0) {
-      output.push(`**关键词**：${item.keywords.join(', ')}`);
-    }
+    if (i > 0) output.push('---');
+    output.push(`### ${item.title}`);
+    output.push(`> 📚 科目：${item.subject}`);
     output.push('');
     output.push(item.content);
     if (item.easy_mistakes) {
       output.push('');
-      output.push(`**易错点**：`);
-      output.push(item.easy_mistakes);
+      output.push(`> ⚠️ **易错点**：${item.easy_mistakes}`);
     }
     output.push('');
   }
@@ -198,54 +164,64 @@ function _detectIntent(query) {
       }
     }
   }
-  return '知识点'; // 默认意图
+  return '知识点';
 }
 
-// ==================== 处理知识点查询 ====================
+// ==================== 知识点查询 ====================
 function _handleKnowledge(query, subject) {
   let results = _searchKnowledge(query, subject, 3);
   if (results.length > 0) {
     return _formatKnowledgeResults(results);
   }
-  // 如果指定了科目没找到，尝试全局搜索
+  // 指定科目没找到 → 全局搜索
   if (subject) {
     results = _searchKnowledge(query, null, 3);
     if (results.length > 0) {
       return _formatKnowledgeResults(results);
     }
   }
-  return (
-    '未找到直接匹配的知识点。\n\n' +
-    '建议：\n' +
-    '1. 换个关键词试试\n' +
-    '2. 指定科目，如"高数 极限""C语言 指针"\n' +
-    '3. 该问题暂无权威明确信息，请查阅山西省教育招生考试院官方文件'
-  );
+  // 兜底：列出该科目所有知识点供选择
+  let suggestion = '未找到直接匹配的知识点。\n\n';
+  suggestion += '**你可以尝试以下方式：**\n';
+  suggestion += '1. 换个关键词，如"高数 极限""C语言 指针"\n';
+  suggestion += '2. 点击上方快捷按钮直接选择科目\n';
+  suggestion += '3. 输入"刷题"开始练习\n\n';
+
+  if (subject) {
+    const subjectItems = KNOWLEDGE_BASE.filter(k => k.subject === subject);
+    if (subjectItems.length > 0) {
+      suggestion += `**${subject} 可查知识点：**\n`;
+      for (const item of subjectItems.slice(0, 8)) {
+        suggestion += `- ${item.title}\n`;
+      }
+      if (subjectItems.length > 8) {
+        suggestion += `- ……等共${subjectItems.length}个知识点\n`;
+      }
+    }
+  } else {
+    suggestion += '**可查科目：** 高等数学、C语言程序设计、公共英语、计算机基础\n';
+  }
+  suggestion += '\n> 💡 该问题暂无权威明确信息，请查阅山西省教育招生考试院官方文件';
+  return suggestion;
 }
 
-// ==================== 格式化考试信息 ====================
+// ==================== 考试信息 ====================
 function _formatAllExamInfo() {
   return (
     '**山西专升本计算机大类考试信息**\n\n' +
-    `**总分**：${EXAM_INFO.total_score}分\n\n` +
-    '**科目一：专业基础课**\n' +
-    `- 科目：${EXAM_INFO.subject1_name}\n` +
-    `- 分值：${EXAM_INFO.subject1_score}分\n` +
-    `- 时长：${EXAM_INFO.subject1_duration}分钟\n\n` +
-    '**科目二：公共基础课**\n' +
-    `- 英语：${EXAM_INFO.english_score}分\n` +
-    `- 高等数学：${EXAM_INFO.math_score}分\n` +
-    `- 合计：${EXAM_INFO.subject2_score}分\n` +
-    `- 英语+高数同一张试卷\n\n` +
-    '**参考来源**：山西省教育招生考试院官方公告'
+    `| 科目 | 分值 | 时长 |\n|------|------|------|\n` +
+    `| ${EXAM_INFO.subject1_name} | ${EXAM_INFO.subject1_score}分 | ${EXAM_INFO.subject1_duration}分钟 |\n` +
+    `| 高等数学+英语 | ${EXAM_INFO.subject2_score}分 | 同卷 |\n` +
+    `| **总分** | **${EXAM_INFO.total_score}分** | - |\n\n` +
+    `> 📌 英语${EXAM_INFO.english_score}分 + 高数${EXAM_INFO.math_score}分 = 公共基础课${EXAM_INFO.subject2_score}分（同一张试卷）\n\n` +
+    '**参考来源**：山西省教育招生考试院'
   );
 }
 
 function _formatScoreInfo() {
   return (
     '**分值分布**\n\n' +
-    '| 科目 | 分值 |\n' +
-    '|------|------|\n' +
+    '| 科目 | 分值 |\n|------|------|\n' +
     `| C程序设计 | ${EXAM_INFO.subject1_score}分 |\n` +
     `| 高等数学 | ${EXAM_INFO.math_score}分 |\n` +
     `| 公共英语 | ${EXAM_INFO.english_score}分 |\n` +
@@ -255,80 +231,70 @@ function _formatScoreInfo() {
 
 function _formatQuestionTypes() {
   const qt = EXAM_INFO.question_types;
-  return (
-    '**题型分布**\n\n' +
-    '**C程序设计（150分）：**\n' +
-    '- 客观题约45%：单选题、判断题、程序阅读题\n' +
-    '- 主观题约55%：程序填空题、程序改错题、编程题\n\n' +
-    '**高等数学（100分）：**\n' +
-    '- 客观题约40%：单项选择题、填空题\n' +
-    '- 主观题约60%：计算题、证明题、应用题\n\n' +
-    '**英语（50分）：**\n' +
-    '- 词汇语法选择题、阅读理解、完形填空、翻译、写作'
-  );
+  let result = '**题型分布**\n\n';
+  result += '**C程序设计（150分）：**\n';
+  result += `- 客观题约45%：${qt['C程序设计'].客观题.split('：')[1]}\n`;
+  result += `- 主观题约55%：${qt['C程序设计'].主观题.split('：')[1]}\n\n`;
+  result += '**高等数学（100分）：**\n';
+  result += `- 客观题约40%：${qt['高等数学'].客观题.split('：')[1]}\n`;
+  result += `- 主观题约60%：${qt['高等数学'].主观题.split('：')[1]}\n\n`;
+  result += '**英语（50分）：**\n';
+  result += `- ${qt['英语'].题型}`;
+  return result;
 }
 
 function _formatTimeInfo() {
   return (
     '**考试时长**\n\n' +
-    '| 科目 | 时长 |\n' +
-    '|------|------|\n' +
+    '| 科目 | 时长 |\n|------|------|\n' +
     `| C程序设计 | ${EXAM_INFO.subject1_duration}分钟 |\n` +
-    '| 英语+高数 | 同一张试卷，英语约40分钟完成 |'
+    '| 英语+高数 | 同一张试卷，英语约40分钟 |\n\n' +
+    '> 📌 两科分两天考试，C程序设计单独考，英语和高数合卷考'
   );
 }
 
-// ==================== 处理考试信息查询 ====================
 function _handleExamInfo(query) {
   if (!EXAM_INFO || !EXAM_INFO.total_score) {
     return '考试信息暂未加载，请检查数据文件。';
   }
-
-  if (query.includes('总分') || query.includes('分值')) {
+  if (query.includes('总分') || query.includes('分值') || query.includes('多少分')) {
+    if (query.includes('题型')) return _formatQuestionTypes();
     return _formatScoreInfo();
-  } else if (query.includes('题型')) {
-    return _formatQuestionTypes();
-  } else if (query.includes('时间')) {
-    return _formatTimeInfo();
-  } else {
-    return _formatAllExamInfo();
   }
+  if (query.includes('题型')) return _formatQuestionTypes();
+  if (query.includes('时间') || query.includes('多长') || query.includes('时长')) return _formatTimeInfo();
+  return _formatAllExamInfo();
 }
 
-// ==================== 处理刷题请求 ====================
+// ==================== 刷题 ====================
 function _handlePractice(subject) {
   if (!QUESTION_BANK || QUESTION_BANK.length === 0) {
     return '题库暂未加载，请检查数据文件。';
   }
-
-  // 筛选题目
   let pool = QUESTION_BANK;
   if (subject) {
     pool = pool.filter(q => q.subject === subject);
   }
-
   if (pool.length === 0) {
     return `暂无${subject || '该科目'}的题目，试试其他科目：高数、C语言、英语、计算机基础`;
   }
 
-  // 随机选min(3, pool.length)道题
   const count = Math.min(3, pool.length);
   const selected = _shuffle(pool).slice(0, count);
-
-  // 保存当前题目供查看答案
   _currentQuestions = selected;
 
-  const output = ['**练习题（每次最多3道）**\n'];
+  const output = ['**📝 练习题**（共' + selected.length + '道）\n'];
   for (let i = 0; i < selected.length; i++) {
     const q = selected[i];
-    output.push(`### 第${i + 1}题（${q.subject}）`);
-    output.push(`**题目**：${q.question}`);
+    output.push(`### 第${i + 1}题（${q.subject}·${q.type}）`);
+    output.push(q.question);
     if (q.options) {
       for (const opt of q.options) {
         output.push(`  ${opt}`);
       }
     }
-    output.push(`\n*答案和解析请回复：查看答案 ${i + 1}*\n`);
+    output.push('');
+    output.push(`> 💡 回复 \`查看答案 ${i + 1}\` 查看答案和解析\n`);
   }
   return output.join('\n');
 }
@@ -336,22 +302,20 @@ function _handlePractice(subject) {
 // ==================== 查看答案 ====================
 function showAnswer(index) {
   if (!_currentQuestions || _currentQuestions.length === 0) {
-    return '暂无当前题目，请先刷题。';
+    return '暂无当前题目，请先刷题。输入"刷题"开始练习。';
   }
   if (index < 1 || index > _currentQuestions.length) {
-    return `题号错误，请输入1-${_currentQuestions.length}之间的数字。`;
+    return `题号错误，请输入 1 到 ${_currentQuestions.length} 之间的数字。`;
   }
   const q = _currentQuestions[index - 1];
   const output = [`### 第${index}题答案\n`];
-  output.push(`**答案**：${q.answer || '无'}`);
+  output.push(`**✅ 答案：${q.answer || '无'}**\n`);
   if (q.analysis) {
-    output.push('');
-    output.push(`**解析**：`);
+    output.push('**📖 解析：**\n');
     output.push(q.analysis);
   }
   if (q.code) {
-    output.push('');
-    output.push(`**代码**：`);
+    output.push('\n**💻 参考代码：**\n');
     output.push('```c');
     output.push(q.code);
     output.push('```');
@@ -359,24 +323,21 @@ function showAnswer(index) {
   return output.join('\n');
 }
 
-// ==================== 处理具体做题请求 ====================
+// ==================== 做题 ====================
 function _handleProblem(query, subject) {
   const results = _searchKnowledge(query, subject, 2);
   if (results.length > 0) {
-    const output = ['**相关解题方法**\n'];
-    output.push(_formatKnowledgeResults(results));
-    output.push('\n如需详细解题步骤，请把完整题目发给我。');
-    return output.join('\n');
+    let output = '**相关解题方法：**\n\n';
+    output += _formatKnowledgeResults(results);
+    output += '\n\n---\n如需详细解题步骤，请把完整题目发给我。';
+    return output;
   }
-  return (
-    '请把完整的题目发给我，我会给出答案和分步解析。\n' +
-    '支持：高数计算题、C语言程序阅读/编程题、英语语法题等。'
-  );
+  return '请把完整的题目发给我，我会给出**答案+分步解析**。\n\n支持：\n- 高数计算题（求极限、求导、积分等）\n- C语言程序阅读/编程题\n- 英语语法题';
 }
 
-// ==================== Fisher-Yates洗牌算法 ====================
+// ==================== 工具函数 ====================
 function _shuffle(arr) {
-  const a = [...arr]; // 不修改原数组
+  const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
@@ -384,7 +345,7 @@ function _shuffle(arr) {
   return a;
 }
 
-// ==================== 主入口：处理用户问题 ====================
+// ==================== 主入口 ====================
 function answer(query) {
   query = (query || '').trim();
   if (!query) {
@@ -394,7 +355,6 @@ function answer(query) {
   const intent = _detectIntent(query);
   const subject = _detectSubject(query);
 
-  // 意图路由
   switch (intent) {
     case '刷题':
       return _handlePractice(subject);
@@ -409,18 +369,6 @@ function answer(query) {
 }
 
 // ==================== 导出 ====================
-// Node.js 环境导出
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    answer,
-    showAnswer,
-    _detectSubject,
-    _detectIntent,
-    _searchKnowledge,
-    _formatKnowledgeResults,
-    _handleKnowledge,
-    _handleExamInfo,
-    _handlePractice,
-    _handleProblem,
-  };
+  module.exports = { answer, showAnswer, _detectSubject, _detectIntent, _searchKnowledge, _handleKnowledge, _handleExamInfo, _handlePractice, _handleProblem };
 }
