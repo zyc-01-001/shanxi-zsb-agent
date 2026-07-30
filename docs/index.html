@@ -368,7 +368,7 @@
             <span class="icon">🎓</span>
             <div>
                 <div>山西专升本·计算机大类答疑助手</div>
-                <div class="stats">知识库 36 条 · 题库 19 道</div>
+                <div class="stats">知识库 36 条 · 题库 19 道 · 游戏 4 种玩法</div>
             </div>
         </div>
         <div class="right-area">
@@ -390,6 +390,7 @@
         <button class="quick-btn" onclick="practice('')">🎲 随机刷题</button>
         <button class="quick-btn" onclick="practice('高等数学')">📝 高数刷题</button>
         <button class="quick-btn" onclick="practice('C语言程序设计')">📝 C语言刷题</button>
+        <button class="quick-btn" onclick="sendQuick('开始闯关')" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; border-color: transparent;">🎮 开始闯关</button>
     </div>
 
     <div class="chat-container" id="chatBox">
@@ -402,8 +403,9 @@
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
     </div>
 
-    <script src="data.js?v=20260730"></script>
-    <script src="engine.js?v=20260730"></script>
+    <script src="data.js?v=20260731"></script>
+    <script src="engine.js?v=20260731"></script>
+    <script src="game.js?v=20260731"></script>
     <script>
         // ========== 初始化 Markdown ==========
         marked.setOptions({
@@ -428,7 +430,8 @@
             '1. **讲解知识点**（高数、C语言、英语、计算机基础）\n' +
             '2. **查看考试信息**（分值、题型、时长）\n' +
             '3. **刷题练习**（随机出题，每次3道）\n' +
-            '4. **解题答疑**（发题目给我，给答案+解析）\n\n' +
+            '4. **解题答疑**（发题目给我，给答案+解析）\n' +
+                '5. **游戏化学习**（输入"开始闯关"进入游戏模式）\n\n' +
             '直接输入问题，或点击下方示例开始：'
         ) + renderExampleQuestions();
         // KaTeX 加载后渲染欢迎消息中的公式（如有）
@@ -535,6 +538,14 @@
         function processQuery(text) {
             return new Promise(resolve => {
                 setTimeout(() => {
+                    // 游戏化学习模式优先处理
+                    if (typeof handleGameInput === 'function') {
+                        const gameResult = handleGameInput(text);
+                        if (gameResult !== null) {
+                            resolve(gameResult);
+                            return;
+                        }
+                    }
                     if (text.startsWith('查看答案')) {
                         const parts = text.split(/\s+/);
                         if (parts.length >= 2) {
@@ -601,6 +612,12 @@
 
         // ========== 清空对话 ==========
         function clearChat() {
+            // 重置游戏状态
+            if (typeof _gameState !== 'undefined') {
+                _gameState.active = false;
+                _gameState.mode = null;
+                _gameState.subMode = null;
+            }
             chatBox.innerHTML = '';
             const welcomeDiv = document.createElement('div');
             welcomeDiv.className = 'message bot';
@@ -609,7 +626,8 @@
                 '你可以：\n' +
                 '- 输入**知识点**关键词，如 `极限`、`指针`、`积分`\n' +
                 '- 输入**考试信息**查看分值和题型\n' +
-                '- 点击上方**刷题**按钮开始练习'
+                '- 点击上方**刷题**按钮开始练习\n' +
+                '- 输入**开始闯关**进入游戏化学习模式'
             ) + renderExampleQuestions();
             chatBox.appendChild(welcomeDiv);
             renderMath(welcomeDiv);
