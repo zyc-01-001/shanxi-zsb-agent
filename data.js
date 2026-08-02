@@ -363,6 +363,213 @@ const KNOWLEDGE_BASE = [
     "tags": ["高频考点"],
     "content": "**信息安全三要素（CIA）：**\n1. **保密性**（Confidentiality）：信息不被未授权访问\n2. **完整性**（Integrity）：信息不被篡改\n3. **可用性**（Availability）：信息可被授权用户访问\n\n**常见安全技术：**\n- 加密（对称加密、非对称加密）\n- 数字证书\n- 防火墙\n- 杀毒软件",
     "easy_mistakes": "数据复制性不属于信息安全三要素。三要素是保密性、完整性、可用性。"
+  },
+  {
+    "id": "math_013",
+    "subject": "高等数学",
+    "title": "换元积分法",
+    "keywords": ["换元积分", "第一类换元", "第二类换元", "凑微分", "三角换元"],
+    "tags": ["高频考点", "必会"],
+    "content": "**第一类换元（凑微分法）：**\n$$\\int f[\\varphi(x)] \\varphi'(x) dx = \\int f(u) du \\quad (u=\\varphi(x))$$\n\n常见凑微分：\n- $\\int f(ax+b)dx = \\dfrac{1}{a}f(ax+b) + C$\n- $\\int x \\cdot f(x^2)dx = \\dfrac{1}{2}f(x^2) + C$\n- $\\int \\dfrac{f'(x)}{f(x)}dx = \\ln|f(x)| + C$\n\n**第二类换元（三角换元）：**\n- 含 $\\sqrt{a^2-x^2}$：令 $x=a\\sin t$\n- 含 $\\sqrt{a^2+x^2}$：令 $x=a\\tan t$\n- 含 $\\sqrt{x^2-a^2}$：令 $x=a\\sec t$",
+    "easy_mistakes": "1. 换元后必须回代原变量\n2. 三角换元时注意变量的取值范围\n3. 凑微分法要注意系数的调整"
+  },
+  {
+    "id": "math_014",
+    "subject": "高等数学",
+    "title": "定积分的几何应用",
+    "keywords": ["定积分", "面积", "体积", "旋转体", "几何应用"],
+    "tags": ["高频考点", "计算题"],
+    "content": "**平面图形面积：**\n$$S = \\int_a^b [f(x) - g(x)] dx \\quad (f(x) \\geq g(x))$$\n\n**旋转体体积：**\n- 绕 x 轴：$$V = \\pi \\int_a^b [f(x)]^2 dx$$\n- 绕 y 轴（柱壳法）：$$V = 2\\pi \\int_a^b x \\cdot f(x) dx$$\n\n**弧长：**\n$$L = \\int_a^b \\sqrt{1 + [f'(x)]^2} dx$$",
+    "easy_mistakes": "1. 求面积时上函数减下函数，不要弄反\n2. 旋转体体积公式中是 $[f(x)]^2$ 不是 $f(x^2)$\n3. 注意积分上下限的确定"
+  },
+  {
+    "id": "math_015",
+    "subject": "高等数学",
+    "title": "多元函数偏导数",
+    "keywords": ["偏导数", "多元函数", "全微分", "偏导"],
+    "tags": ["高频考点"],
+    "content": "**偏导数定义：**\n$$\\dfrac{\\partial z}{\\partial x} = \\lim_{\\Delta x \\to 0} \\dfrac{f(x+\\Delta x, y) - f(x,y)}{\\Delta x}$$\n\n**求法：** 对 $x$ 求偏导时，将 $y$ 视为常数。\n\n**二阶偏导数：**\n$$\\dfrac{\\partial^2 z}{\\partial x \\partial y} = \\dfrac{\\partial}{\\partial y}\\left(\\dfrac{\\partial z}{\\partial x}\\right)$$\n\n**全微分：**\n$$dz = \\dfrac{\\partial z}{\\partial x}dx + \\dfrac{\\partial z}{\\partial y}dy$$\n\n**混合偏导数连续时相等：** $\\dfrac{\\partial^2 z}{\\partial x \\partial y} = \\dfrac{\\partial^2 z}{\\partial y \\partial x}$",
+    "easy_mistakes": "1. 偏导数只对一个变量求导，其他变量视为常数\n2. 混合偏导数相等的条件是连续\n3. 全微分公式不要遗漏 dx 或 dy"
+  },
+  {
+    "id": "math_016",
+    "subject": "高等数学",
+    "title": "二重积分计算",
+    "keywords": ["二重积分", "重积分", "累次积分", "极坐标"],
+    "tags": ["高频考点", "计算题"],
+    "content": "**直角坐标：**\n$$\\iint_D f(x,y) dxdy = \\int_a^b dx \\int_{\\varphi_1(x)}^{\\varphi_2(x)} f(x,y) dy$$\n\n**极坐标：**\n$$\\iint_D f(x,y) dxdy = \\iint_D f(r\\cos\\theta, r\\sin\\theta) r \\, dr \\, d\\theta$$\n\n**交换积分次序：** 先画出积分区域 D，再重新确定上下限。\n\n**注意：** 极坐标下面积元素为 $r \\, dr \\, d\\theta$，不要遗漏 $r$。",
+    "easy_mistakes": "1. 极坐标下不要忘记乘 $r$\n2. 交换积分次序时必须重新画区域确定上下限\n3. 直角坐标下 X 型和 Y 型区域的积分顺序不同"
+  },
+  {
+    "id": "math_017",
+    "subject": "高等数学",
+    "title": "常数项级数审敛法",
+    "keywords": ["级数", "收敛", "发散", "审敛法", "比值法", "比较法"],
+    "tags": ["高频考点"],
+    "content": "**级数收敛的必要条件：** 若 $\\sum a_n$ 收敛，则 $\\lim_{n \\to \\infty} a_n = 0$（逆命题不成立）\n\n**正项级数审敛法：**\n1. **比较审敛法：** 若 $a_n \\leq b_n$，$\\sum b_n$ 收敛则 $\\sum a_n$ 收敛\n2. **比值审敛法（达朗贝尔）：** $\\lim_{n \\to \\infty} \\dfrac{a_{n+1}}{a_n} = \\rho$\n   - $\\rho < 1$：收敛\n   - $\\rho > 1$：发散\n   - $\\rho = 1$：不确定\n3. **p 级数：** $\\sum \\dfrac{1}{n^p}$，$p>1$ 收敛，$p \\leq 1$ 发散\n\n**几何级数：** $\\sum q^n$，$|q|<1$ 收敛，$|q| \\geq 1$ 发散",
+    "easy_mistakes": "1. $\\lim a_n = 0$ 不能推出级数收敛（如调和级数 $\\sum 1/n$ 发散）\n2. 比值法 $\\rho=1$ 时需要用其他方法判断\n3. 比较审敛法的方向：大的收敛则小的收敛"
+  },
+  {
+    "id": "math_018",
+    "subject": "高等数学",
+    "title": "牛顿-莱布尼茨公式",
+    "keywords": ["牛顿莱布尼茨", "定积分", "微积分基本定理"],
+    "tags": ["必背公式", "基础"],
+    "content": "**牛顿-莱布尼茨公式（微积分基本定理）：**\n$$\\int_a^b f(x) dx = F(b) - F(a)$$\n其中 $F(x)$ 是 $f(x)$ 的一个原函数。\n\n**变上限积分求导：**\n$$\\dfrac{d}{dx} \\int_a^x f(t) dt = f(x)$$\n\n**推广形式：**\n$$\\dfrac{d}{dx} \\int_{\\varphi(x)}^{\\psi(x)} f(t) dt = f(\\psi(x))\\psi'(x) - f(\\varphi(x))\\varphi'(x)$$",
+    "easy_mistakes": "1. 牛顿-莱布尼茨公式要求 $f(x)$ 在 $[a,b]$ 上连续\n2. 变上限积分求导时积分变量用 $t$ 不用 $x$\n3. 注意变下限积分的符号：$\\int_x^a f(t)dt = -\\int_a^x f(t)dt$"
+  },
+  {
+    "id": "c_015",
+    "subject": "C语言程序设计",
+    "title": "循环结构（for/while/do-while）",
+    "keywords": ["循环", "for", "while", "do-while", "break", "continue"],
+    "tags": ["高频考点", "基础"],
+    "content": "**for 循环：**\n```c\nfor(初始化; 条件; 更新) { 循环体; }\n```\n\n**while 循环：** 先判断后执行\n```c\nwhile(条件) { 循环体; }\n```\n\n**do-while 循环：** 先执行后判断（至少执行一次）\n```c\ndo { 循环体; } while(条件);\n```\n\n**break：** 跳出当前循环\n**continue：** 跳过本次循环体剩余部分，进入下一次循环判断",
+    "easy_mistakes": "1. do-while 至少执行一次，while 可能一次都不执行\n2. for(;;) 是死循环\n3. continue 不跳出循环，只跳过本次\n4. for 循环结束后，循环变量的值是最后一次条件不满足时的值"
+  },
+  {
+    "id": "c_016",
+    "subject": "C语言程序设计",
+    "title": "递归",
+    "keywords": ["递归", "递归函数", "阶乘", "斐波那契", "递归终止"],
+    "tags": ["高频考点", "难点"],
+    "content": "**递归三要素：**\n1. 递归终止条件（边界条件）\n2. 递归公式（大问题分解为小问题）\n3. 向终止条件靠近\n\n**经典例子 - 阶乘：**\n```c\nint factorial(int n) {\n    if(n <= 1) return 1;    // 终止条件\n    return n * factorial(n-1);  // 递归调用\n}\n```\n\n**斐波那契数列：**\n```c\nint fib(int n) {\n    if(n <= 2) return 1;\n    return fib(n-1) + fib(n-2);\n}\n```\n\n**递归过程：** 函数调用自身 → 参数变小 → 到达终止条件 → 逐层返回",
+    "easy_mistakes": "1. 忘记写终止条件会导致栈溢出\n2. 递归参数没有向终止条件靠近\n3. 递归效率低（如斐波那契有大量重复计算），可用数组缓存优化"
+  },
+  {
+    "id": "c_017",
+    "subject": "C语言程序设计",
+    "title": "位运算",
+    "keywords": ["位运算", "与", "或", "异或", "取反", "移位", "按位"],
+    "tags": ["高频考点"],
+    "content": "**六种位运算符：**\n- `&` 按位与：两位都1则为1\n- `|` 按位或：有一位1则为1\n- `^` 按位异或：两位不同为1\n- `~` 按位取反：0变1，1变0\n- `<<` 左移：高位丢弃，低位补0（相当于乘2）\n- `>>` 右移：低位丢弃，高位补符号位（相当于除2）\n\n**常见应用：**\n- 清零特定位：`a & ~mask`\n- 设置特定位为1：`a | mask`\n- 翻转特定位：`a ^ mask`\n- 判断奇偶：`a & 1`（结果为0是偶数）\n- 交换两数：`a ^= b; b ^= a; a ^= b;`",
+    "easy_mistakes": "1. 位运算符和逻辑运算符不同（& vs &&，| vs ||）\n2. 异或运算满足交换律和结合律\n3. 一个数异或自己结果为0：`a ^ a = 0`"
+  },
+  {
+    "id": "c_018",
+    "subject": "C语言程序设计",
+    "title": "动态内存分配（malloc/free）",
+    "keywords": ["malloc", "free", "动态内存", "堆", "calloc", "realloc"],
+    "tags": ["高频考点", "难点"],
+    "content": "**malloc：** 分配指定字节数的内存\n```c\nint *p = (int*)malloc(n * sizeof(int));\nif(p == NULL) { /* 分配失败处理 */ }\n```\n\n**calloc：** 分配并初始化为0\n```c\nint *p = (int*)calloc(n, sizeof(int));\n```\n\n**realloc：** 重新分配内存大小\n```c\np = (int*)realloc(p, new_n * sizeof(int));\n```\n\n**free：** 释放内存\n```c\nfree(p);\np = NULL;  // 避免野指针\n```\n\n内存分配在**堆区**，函数结束后不会自动释放，必须手动 free。",
+    "easy_mistakes": "1. malloc 返回的内存未初始化，内容不确定\n2. free 后要将指针置 NULL，避免野指针\n3. 不能重复 free 同一块内存\n4. 内存泄漏：分配了不 free"
+  },
+  {
+    "id": "c_019",
+    "subject": "C语言程序设计",
+    "title": "排序算法（冒泡与选择）",
+    "keywords": ["排序", "冒泡排序", "选择排序", "算法"],
+    "tags": ["高频考点", "编程题"],
+    "content": "**冒泡排序：** 相邻元素两两比较，每轮把最大值冒到最后\n```c\nfor(i = 0; i < n-1; i++)\n    for(j = 0; j < n-1-i; j++)\n        if(a[j] > a[j+1]) {\n            int t = a[j];\n            a[j] = a[j+1];\n            a[j+1] = t;\n        }\n```\n时间复杂度：$O(n^2)$\n\n**选择排序：** 每轮选出最小值放到前面\n```c\nfor(i = 0; i < n-1; i++) {\n    int min = i;\n    for(j = i+1; j < n; j++)\n        if(a[j] < a[min]) min = j;\n    if(min != i) { int t=a[i]; a[i]=a[min]; a[min]=t; }\n}\n```\n时间复杂度：$O(n^2)$",
+    "easy_mistakes": "1. 冒泡排序内层循环边界是 n-1-i 不是 n-1\n2. 选择排序是找最小值的下标再交换，不是每次都交换\n3. 两层循环都是从0开始，注意边界"
+  },
+  {
+    "id": "c_020",
+    "subject": "C语言程序设计",
+    "title": "共用体（union）与枚举（enum）",
+    "keywords": ["union", "共用体", "enum", "枚举", "typedef"],
+    "tags": ["中频考点"],
+    "content": "**共用体 union：** 所有成员共享同一段内存\n```c\nunion Data {\n    int i;\n    float f;\n    char str[20];\n};\n```\n- 共用体大小 = 最大成员的大小\n- 同一时刻只能存储一个成员的值\n- 修改一个成员会影响其他成员\n\n**枚举 enum：**\n```c\nenum Color { RED, GREEN, BLUE };\n// RED=0, GREEN=1, BLUE=2（默认从0开始）\nenum Week { MON=1, TUE, WED, THU, FRI, SAT, SUN };\n// MON=1, TUE=2, ...（可指定起始值）\n```\n\n**typedef：** 给类型起别名\n```c\ntypedef unsigned int uint;\ntypedef struct { int x; int y; } Point;\n```",
+    "easy_mistakes": "1. union 是共享内存，不是各自独立\n2. enum 的值是整数，默认从0开始递增\n3. typedef 末尾有分号"
+  },
+  {
+    "id": "c_021",
+    "subject": "C语言程序设计",
+    "title": "条件编译",
+    "keywords": ["条件编译", "#ifdef", "#ifndef", "#endif", "#define", "宏"],
+    "tags": ["中频考点"],
+    "content": "**条件编译指令：**\n```c\n#ifdef DEBUG\n    printf(\"调试信息\");\n#endif\n\n#ifndef HEADER_H\n#define HEADER_H\n// 头文件内容\n#endif\n\n#if VERSION >= 2\n    // 新版本代码\n#else\n    // 旧版本代码\n#endif\n```\n\n**用途：**\n1. 防止头文件重复包含（#ifndef 头文件保护）\n2. 跨平台编译\n3. 调试开关\n4. 版本控制",
+    "easy_mistakes": "1. #ifdef 判断的是宏是否被定义，不是值是否为真\n2. 头文件保护用的宏名通常用文件名大写加下划线\n3. #endif 后面不需要加条件"
+  },
+  {
+    "id": "eng_006",
+    "subject": "公共英语",
+    "title": "名词性从句",
+    "keywords": ["名词性从句", "主语从句", "宾语从句", "表语从句", "同位语从句", "that", "whether"],
+    "tags": ["高频考点"],
+    "content": "**名词性从句类型：**\n1. **主语从句：** *That he passed the exam* is true.\n2. **宾语从句：** I know *that he is honest*.\n3. **表语从句：** The truth is *that we need more time*.\n4. **同位语从句：** The fact *that he lied* shocked us.\n\n**引导词：**\n- **that：** 在宾语从句中可省略，其他从句不省略\n- **whether/if：** 是否（whether 可用于所有从句，if 不能用于主语从句）\n- **连接代词：** what, who, whom, whose, which\n- **连接副词：** when, where, why, how\n\n**语序：** 名词性从句用**陈述语序**，不是疑问语序。",
+    "easy_mistakes": "1. 名词性从句必须用陈述语序\n2. if 不能引导主语从句和表语从句\n3. that 在非宾语从句中不可省略\n4. whether 后可接 or not，if 通常不行"
+  },
+  {
+    "id": "eng_007",
+    "subject": "公共英语",
+    "title": "状语从句",
+    "keywords": ["状语从句", "时间状语", "原因状语", "条件状语", "让步状语", "目的状语"],
+    "tags": ["高频考点"],
+    "content": "**常见状语从句引导词：**\n\n| 类型 | 引导词 |\n|------|--------|\n| 时间 | when, while, as, before, after, since, until, once |\n| 原因 | because, since, as, for, now that |\n| 条件 | if, unless (=if not), as long as, in case |\n| 让步 | though, although, even though, even if, no matter |\n| 目的 | so that, in order that |\n| 结果 | so...that, such...that |\n| 比较 | than, as...as |\n\n**重点：**\n- **主将从现：** 时间/条件状语从句中，主句用将来时，从句用现在时表将来\n  - *If it rains tomorrow, I will stay home.*\n- **though/although 不与 but 连用**，但可与 yet 连用",
+    "easy_mistakes": "1. 时间和条件状语从句用一般现在时表将来（主将从现）\n2. although/though 后面不能加 but\n3. until 用于肯定句表示\"直到...为止\"，用于否定句表示\"直到...才\""
+  },
+  {
+    "id": "eng_008",
+    "subject": "公共英语",
+    "title": "主谓一致",
+    "keywords": ["主谓一致", "主语", "谓语", "单复数", "就近原则", "就远原则"],
+    "tags": ["高频考点", "易错"],
+    "content": "**三大原则：**\n\n1. **语法一致：** 主语单数→谓语单数，主语复数→谓语复数\n2. **意义一致：** 集合名词看作整体用单数，看作个体用复数\n   - *The family is big.* / *The family are having dinner.*\n3. **就近原则：** 由 or, either...or, neither...nor, not only...but also 连接时\n   - *Neither he nor I am wrong.*\n\n**特殊用法：**\n- **each/every + 单数名词** → 谓语用单数\n- **both + 复数名词** → 谓语用复数\n- **The number of + 复数名词** → 谓语用单数\n- **A number of + 复数名词** → 谓语用复数\n- **Mathematics/Physics/News** → 谓语用单数（形复意单）",
+    "easy_mistakes": "1. The number of（单数）vs A number of（复数）\n2. 就近原则只适用于 or/neither...nor/either...or 等\n3. 学科名词（-ics 结尾）通常用单数"
+  },
+  {
+    "id": "eng_009",
+    "subject": "公共英语",
+    "title": "情态动词",
+    "keywords": ["情态动词", "can", "must", "should", "may", "表推测", "完成时"],
+    "tags": ["高频考点"],
+    "content": "**情态动词表推测：**\n\n| 程度 | 肯定 | 否定 | 疑问 |\n|------|------|------|------|\n| 强推测 | must（一定） | can't（不可能） | can/could |\n| 弱推测 | may/might（可能） | may not（可能不） | — |\n\n**情态动词 + have done：**\n- **must have done：** 过去一定做了（肯定推测）\n  - *He must have left already.*\n- **should have done：** 本应该做（但没做，表责备）\n  - *You should have told me.*\n- **could have done：** 本可以做（但没做）\n  - *I could have helped you.*\n- **needn't have done：** 本不必做（但做了）\n  - *You needn't have worried.*",
+    "easy_mistakes": "1. must 表推测的否定形式是 can't 不是 mustn't\n2. should have done 含责备意味，表示本该做但没做\n3. must have done 用于对过去事情的肯定推测"
+  },
+  {
+    "id": "eng_010",
+    "subject": "公共英语",
+    "title": "强调句与反义疑问句",
+    "keywords": ["强调句", "It is...that", "反义疑问句", "附加疑问句"],
+    "tags": ["中频考点"],
+    "content": "**强调句结构：**\n$$\\text{It is/was} + \\text{被强调部分} + \\text{that/who} + \\text{其余部分}$$\n- 强调人：用 who 或 that\n- 强调物/时间/地点等：用 that\n\n例：*It was **tomorrow** that he would leave.*\n\n**判断方法：** 去掉 It is/was...that 后，句子仍然完整则 是强调句。\n\n**反义疑问句：**\n- 前肯后否：*He is a student, isn't he?*\n- 前否后肯：*You don't like tea, do you?*\n\n**特殊情况：**\n- Let's... → *shall we?*\n- Let us... → *will you?*\n- I am... → *aren't I?*\n- 含 rarely/seldom/hardly 等否定词 → 用肯定\n- 含 think/believe + 宾语从句 → 反问部分跟主句的主语和动词",
+    "easy_mistakes": "1. 强调句去掉 It is...that 后句子仍完整\n2. 反义疑问句遵循\"前肯后否，前否后肯\"\n3. I am 的反义疑问是 aren't I 不是 am not I"
+  },
+  {
+    "id": "cs_006",
+    "subject": "计算机基础",
+    "title": "数据结构基础（栈、队列、链表）",
+    "keywords": ["数据结构", "栈", "队列", "链表", "后进先出", "先进先出"],
+    "tags": ["高频考点", "必会"],
+    "content": "**栈（Stack）：** 后进先出（LIFO）\n- 入栈 push，出栈 pop\n- 应用：函数调用、括号匹配、表达式求值\n\n**队列（Queue）：** 先进先出（FIFO）\n- 入队 enqueue，出队 dequeue\n- 应用：任务调度、广度优先搜索\n\n**链表（Linked List）：**\n- 单链表：每个节点包含数据和指向下一个节点的指针\n- 双链表：每个节点有前驱和后继指针\n- 与数组对比：插入删除快（$O(1)$），随机访问慢（$O(n)$）\n\n**树（Tree）：**\n- 二叉树：每个节点最多两个子节点\n- 满二叉树：所有分支节点都有两个子节点\n- 完全二叉树：除最后一层外全满，最后一层从左到右连续",
+    "easy_mistakes": "1. 栈是 LIFO 不是 FIFO\n2. 队列是 FIFO 不是 LIFO\n3. 链表不支持随机访问，访问第i个元素需要从头遍历"
+  },
+  {
+    "id": "cs_007",
+    "subject": "计算机基础",
+    "title": "原码、反码与补码",
+    "keywords": ["原码", "反码", "补码", "有符号数", "负数表示"],
+    "tags": ["高频考点", "必会"],
+    "content": "**以8位为例，表示 -5：**\n\n**原码：** 最高位为符号位（0正1负）\n- $-5$ 的原码：$10000101$\n\n**反码：** 正数同原码；负数符号位不变，其余取反\n- $-5$ 的反码：$11111010$\n\n**补码：** 反码 + 1\n- $-5$ 的补码：$11111011$\n\n**关键规则：**\n- 正数：原码 = 反码 = 补码\n- 负数：反码 = 原码取反（符号位不变），补码 = 反码 + 1\n- 计算机中**用补码存储和运算**整数\n- 补码的好处：将减法转化为加法，0的表示唯一\n\n**范围（8位）：**\n- 原码：$-127 \\sim +127$\n- 补码：$-128 \\sim +127$（多表示一个 -128）",
+    "easy_mistakes": "1. 正数的原码反码补码相同\n2. 负数求补码：取反后要 +1\n3. 补码的补码等于原码\n4. 8位补码范围是 -128~127，不是 -127~127"
+  },
+  {
+    "id": "cs_008",
+    "subject": "计算机基础",
+    "title": "操作系统基础概念",
+    "keywords": ["操作系统", "进程", "线程", "调度", "死锁", "内存管理"],
+    "tags": ["高频考点"],
+    "content": "**操作系统功能：**\n1. 进程管理（CPU调度）\n2. 内存管理（分配与回收）\n3. 文件管理\n4. 设备管理\n5. 提供用户接口\n\n**进程 vs 线程：**\n| | 进程 | 线程 |\n|--|------|------|\n| 资源 | 独立地址空间 | 共享进程资源 |\n| 开销 | 大 | 小 |\n| 通信 | 需要IPC机制 | 直接共享内存 |\n\n**进程三态：** 就绪 → 运行 → 阻塞\n\n**死锁四条件：** 互斥、占有等待、不可剥夺、循环等待\n\n**常见调度算法：**\n- FCFS（先来先服务）\n- SJF（短作业优先）\n- 时间片轮转\n- 优先级调度",
+    "easy_mistakes": "1. 线程是进程内的执行单位，不是独立地址空间\n2. 死锁需要四个条件同时满足\n3. 进程的基本状态是就绪、运行、阻塞，不是创建和终止"
+  },
+  {
+    "id": "cs_009",
+    "subject": "计算机基础",
+    "title": "数据库与SQL基础",
+    "keywords": ["数据库", "SQL", "SELECT", "关系模型", "主键", "外键"],
+    "tags": ["高频考点"],
+    "content": "**关系数据库术语：**\n- **主键（Primary Key）：** 唯一标识一条记录，不能为NULL\n- **外键（Foreign Key）：** 引用另一个表的主键\n- **索引（Index）：** 提高查询速度\n\n**SQL 四类语句：**\n1. **DDL（数据定义）：** CREATE, ALTER, DROP\n2. **DML（数据操作）：** INSERT, UPDATE, DELETE\n3. **DQL（数据查询）：** SELECT\n4. **DCL（数据控制）：** GRANT, REVOKE\n\n**基本查询：**\n```sql\nSELECT 列名 FROM 表名\nWHERE 条件\nGROUP BY 列名\nHAVING 分组条件\nORDER BY 列名 ASC|DESC;\n```\n\n**WHERE vs HAVING：** WHERE 过滤行（分组前），HAVING 过滤分组（分组后）",
+    "easy_mistakes": "1. WHERE 在分组前过滤，HAVING 在分组后过滤\n2. 主键不能为 NULL，外键可以为 NULL\n3. DELETE 删除数据但保留表结构，DROP 删除整个表"
+  },
+  {
+    "id": "cs_010",
+    "subject": "计算机基础",
+    "title": "软件工程基础",
+    "keywords": ["软件工程", "软件生命周期", "需求分析", "测试", "瀑布模型"],
+    "tags": ["中频考点"],
+    "content": "**软件生命周期：**\n1. 可行性研究 → 2. 需求分析 → 3. 概要设计 → 4. 详细设计 → 5. 编码 → 6. 测试 → 7. 维护\n\n**软件测试：**\n- **黑盒测试：** 不关心内部实现，只测输入输出（功能测试）\n- **白盒测试：** 关注内部逻辑结构（路径测试）\n- **单元测试 → 集成测试 → 系统测试 → 验收测试**\n\n**开发模型：**\n- **瀑布模型：** 线性顺序，文档驱动，需求明确时使用\n- **快速原型：** 先建原型再迭代\n- **螺旋模型：** 结合瀑布和原型，强调风险分析\n- **敏捷开发：** 迭代增量，快速响应变化\n\n**软件质量特性：** 功能性、可靠性、易用性、效率、可维护性、可移植性",
+    "easy_mistakes": "1. 黑盒测试关注功能，白盒测试关注内部结构\n2. 瀑布模型的特点是线性顺序、文档驱动\n3. 测试的顺序是单元→集成→系统→验收"
   }
 ];
 
