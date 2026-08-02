@@ -368,7 +368,98 @@ function answer(query) {
   }
 }
 
+// ==================== 智能搜索 ====================
+// 全局搜索：在 KNOWLEDGE_BASE 中按关键词匹配，返回按匹配度排序的结果数组
+function searchKnowledge(keyword) {
+  if (!keyword || !keyword.trim()) return [];
+  keyword = keyword.trim().toLowerCase();
+  var results = [];
+  for (var i = 0; i < KNOWLEDGE_BASE.length; i++) {
+    var kb = KNOWLEDGE_BASE[i];
+    var score = 0;
+    // 标题匹配（权重最高）
+    if (kb.title.toLowerCase().includes(keyword)) score += 10;
+    // 关键词匹配
+    if (kb.keywords) {
+      for (var j = 0; j < kb.keywords.length; j++) {
+        if (kb.keywords[j].toLowerCase().includes(keyword) || keyword.includes(kb.keywords[j].toLowerCase())) {
+          score += 8;
+        }
+      }
+    }
+    // 标签匹配
+    if (kb.tags) {
+      for (var j = 0; j < kb.tags.length; j++) {
+        if (kb.tags[j].toLowerCase().includes(keyword)) score += 5;
+      }
+    }
+    // 内容匹配
+    if (kb.content && kb.content.toLowerCase().includes(keyword)) score += 3;
+    // 分词匹配（对中文关键词）
+    var tokens = keyword.split(/[\s,，。、]+/).filter(function(t){return t.length > 1;});
+    for (var t = 0; t < tokens.length; t++) {
+      if (kb.title.includes(tokens[t])) score += 4;
+      if (kb.content && kb.content.includes(tokens[t])) score += 2;
+    }
+    if (score > 0) {
+      var summary = (kb.content || '').replace(/\*\*/g, '').replace(/\$\$/g, '').replace(/\n/g, ' ').substring(0, 100) + '...';
+      results.push({ id: kb.id, subject: kb.subject, title: kb.title, summary: summary, score: score });
+    }
+  }
+  results.sort(function(a, b) { return b.score - a.score; });
+  return results;
+}
+
+// 渲染搜索结果为 HTML（供聊天界面展示）
+function showSearchResults(keyword) {
+  var results = searchKnowledge(keyword);
+  var html = '';
+  if (results.length === 0) {
+    html = '<div style="padding:16px;background:rgba(0,240,255,0.05);border-radius:12px;border:1px solid rgba(0,240,255,0.2);color:rgba(255,255,255,0.6)">未找到与「' + keyword + '」相关的知识点，试试其他关键词？</div>';
+  } else {
+    html = '<div style="margin-bottom:8px;color:rgba(255,255,255,0.6);font-size:13px">🔍 找到 ' + results.length + ' 个相关知识点：</div>';
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      var color = r.subject === '高等数学' ? '#ff9800' : r.subject === 'C语言程序设计' ? '#a855f7' : r.subject === '公共英语' ? '#e91e63' : '#00bcd4';
+      html += '<div style="margin-bottom:10px;padding:14px;background:rgba(255,255,255,0.05);border-radius:12px;border-left:3px solid ' + color + ';cursor:pointer" onclick="searchClickResult(\'' + r.id + '\')">' +
+        '<div style="font-size:12px;color:' + color + ';margin-bottom:4px">' + r.subject + '</div>' +
+        '<div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:4px">' + r.title + '</div>' +
+        '<div style="font-size:13px;color:rgba(255,255,255,0.5)">' + r.summary + '</div>' +
+        '</div>';
+    }
+  }
+  return html;
+}
+
+// 点击某条搜索结果后，展示该知识点的完整内容
+function searchClickResult(kbId) {
+  for (var i = 0; i < KNOWLEDGE_BASE.length; i++) {
+    if (KNOWLEDGE_BASE[i].id === kbId) {
+      var kb = KNOWLEDGE_BASE[i];
+      var html = formatKnowledge(kb);
+      addMessage(html, false);
+      return;
+    }
+  }
+}
+
+// 格式化单条知识点为 Markdown 字符串（供 searchClickResult 调用，复用现有渲染管线）
+function formatKnowledge(kb) {
+  if (!kb) return '';
+  var output = [];
+  output.push('### ' + kb.title);
+  output.push('> 📚 科目：' + kb.subject);
+  output.push('');
+  output.push(kb.content || '');
+  if (kb.easy_mistakes) {
+    output.push('');
+    output.push('> ⚠️ **易错点**：' + kb.easy_mistakes);
+  }
+  output.push('');
+  return output.join('\n');
+}
+
 // ==================== 导出 ====================
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { answer, showAnswer, _detectSubject, _detectIntent, _searchKnowledge, _handleKnowledge, _handleExamInfo, _handlePractice, _handleProblem };
+  module.exports = { answer, showAnswer, searchKnowledge, showSearchResults, searchClickResult, formatKnowledge, _detectSubject, _detectIntent, _searchKnowledge, _handleKnowledge, _handleExamInfo, _handlePractice, _handleProblem };
 }
