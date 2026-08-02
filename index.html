@@ -3,7 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>山西专升本·计算机大类答疑助手</title>
+    <title>山西专升本计算机大类智能学习助手 | 数智芯AI答疑+闯关游戏</title>
+    <meta name="description" content="山西专升本计算机大类智能学习助手「数智芯」，涵盖C程序设计、高等数学、公共英语、计算机基础四大科目。AI智能答疑+游戏化闯关学习，支持存档续玩、成就系统、道具收集，让专升本备考不再枯燥！">
+    <meta name="keywords" content="山西专升本,专升本计算机,专升本C语言,专升本高数,专升本英语,计算机基础,专升本答疑,专升本刷题,专升本游戏,数智芯,AI学习助手,专升本备考">
+    <meta name="author" content="数智芯">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://zyc-01-001.github.io/shanxi-zsb-agent/">
+
+    <!-- Open Graph 社交分享 -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="山西专升本计算机大类智能学习助手 | 数智芯">
+    <meta property="og:description" content="AI智能答疑+游戏化闯关学习，涵盖C程序设计、高等数学、公共英语、计算机基础。边玩边学，轻松备考专升本！">
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:url" content="https://zyc-01-001.github.io/shanxi-zsb-agent/">
+    <meta property="og:site_name" content="数智芯·专升本学习助手">
+
+    <!-- 搜索引擎结构化数据 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "EducationalApplication",
+        "name": "数智芯·山西专升本计算机大类学习助手",
+        "description": "AI智能答疑+游戏化闯关学习平台，涵盖C程序设计、高等数学、公共英语、计算机基础四大科目，支持存档续玩、成就系统。",
+        "url": "https://zyc-01-001.github.io/shanxi-zsb-agent/",
+        "applicationCategory": "EducationApplication",
+        "operatingSystem": "Web Browser",
+        "inLanguage": "zh-CN",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "CNY"
+        },
+        "audience": {
+            "@type": "EducationalAudience",
+            "educationalRole": "student"
+        },
+        "about": [
+            {"@type": "Thing", "name": "C程序设计"},
+            {"@type": "Thing", "name": "高等数学"},
+            {"@type": "Thing", "name": "公共英语"},
+            {"@type": "Thing", "name": "计算机基础"}
+        ]
+    }
+    </script>
+
+    <!-- PWA 支持 -->
+    <link rel="manifest" href="manifest.json">
+
     <!-- Markdown 渲染 -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- 代码高亮 -->
@@ -439,7 +485,8 @@
         /* ===== 通用游戏容器 ===== */
         .g-game-wrap {
             width: 100%;
-            max-width: 640px;
+            max-width: 900px;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -656,7 +703,8 @@
         /* ===== 大厅界面 ===== */
         .g-lobby {
             width: 100%;
-            max-width: 640px;
+            max-width: 1200px;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -689,8 +737,8 @@
         }
         .g-mode-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
             width: 100%;
         }
         .g-mode-card {
@@ -1268,6 +1316,31 @@
         #gameContent .katex-display::-webkit-scrollbar { height: 4px; }
         #gameContent .katex-display::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
 
+        /* ===== 游戏桌面端增强（≥992px） ===== */
+        @media (min-width: 992px) {
+            #gameContent { padding: 30px 40px 40px; }
+            .g-lobby-title { font-size: 34px; }
+            .g-lobby-sub { font-size: 16px; }
+            .g-mode-card { padding: 28px 20px; min-height: 220px; }
+            .g-mode-icon { font-size: 48px; }
+            .g-mode-name { font-size: 18px; }
+            .g-mode-desc { font-size: 13px; }
+            .g-q-card { padding: 28px 32px; }
+            .g-q-text { font-size: 18px; }
+            .g-opt-btn { padding: 16px 22px; font-size: 16px; }
+            .g-save-bar { padding: 16px 20px; }
+            .g-save-title { font-size: 15px; }
+            .g-save-stat { font-size: 14px; }
+            .g-hud { padding: 14px 20px; }
+        }
+
+        /* ===== 中等屏幕适配（769px-991px） ===== */
+        @media (min-width: 769px) and (max-width: 991px) {
+            .g-mode-grid { grid-template-columns: 1fr 1fr; }
+            .g-lobby { max-width: 800px; }
+            .g-game-wrap { max-width: 700px; }
+        }
+
         /* ===== 游戏移动端适配 ===== */
         @media (max-width: 768px) {
             #gameContent { padding: 14px 12px 30px; }
@@ -1765,7 +1838,7 @@
             <span class="icon">🎓</span>
             <div>
                 <div>山西专升本·计算机大类答疑助手</div>
-                <div class="stats">知识库 36 条 · 题库 19 道 · 游戏 4 种玩法</div>
+                <div class="stats">知识库 60 条 · 题库 19 道 · 游戏 4 种玩法</div>
             </div>
         </div>
         <div class="right-area">
@@ -1812,9 +1885,9 @@
         <div id="gameContent"></div>
     </div>
 
-    <script src="data.js?v=20260803a"></script>
-    <script src="engine.js?v=20260803a"></script>
-    <script src="game.js?v=20260803a"></script>
+    <script src="data.js?v=20260803b"></script>
+    <script src="engine.js?v=20260803b"></script>
+    <script src="game.js?v=20260803b"></script>
     <script>
         // ========== 初始化 Markdown ==========
         marked.setOptions({
