@@ -98,7 +98,15 @@ let _gameState = {
   // 宝箱系统
   chestReward:null,
   // 音效开关
-  soundOn:true
+  soundOn:true,
+  // 错题本 / 打卡 / 学习时间 / 科目统计 / 考试最高分
+  wrongBook:[],
+  checkInData:{lastCheckIn:null,streak:0,totalDays:0,dates:[]},
+  studyTime:{total:0,byDate:{}},
+  subjectStats:{},
+  examBestScore:0,
+  gameStartTime:null,
+  examTimerInterval:null
 };
 
 // ==================== 存档系统 (localStorage) ====================
@@ -122,6 +130,12 @@ function _saveGame(){
       feBestScore:_gameState.feBestScore||0,
       qaBestScore:_gameState.qaBestScore||0,
       fbBestScore:_gameState.fbBestScore||0,
+      // 扩展存档字段
+      wrongBook:_gameState.wrongBook||[],
+      checkInData:_gameState.checkInData||{lastCheckIn:null,streak:0,totalDays:0,dates:[]},
+      studyTime:_gameState.studyTime||{total:0,byDate:{}},
+      subjectStats:_gameState.subjectStats||{},
+      examBest:_gameState.examBestScore||0,
       // 时间戳
       saveTime:Date.now(),
       lastMode:_gameState.mode||null
@@ -163,6 +177,11 @@ function _applySave(save){
   _gameState.feBestScore=save.feBestScore||0;
   _gameState.qaBestScore=save.qaBestScore||0;
   _gameState.fbBestScore=save.fbBestScore||0;
+  _gameState.wrongBook=(save.wrongBook||[]).slice();
+  _gameState.checkInData=save.checkInData||{lastCheckIn:null,streak:0,totalDays:0,dates:[]};
+  _gameState.studyTime=save.studyTime||{total:0,byDate:{}};
+  _gameState.subjectStats=save.subjectStats||{};
+  _gameState.examBestScore=save.examBest||0;
   return true;
 }
 function _deleteSave(){
@@ -452,6 +471,7 @@ function _shakeScreen(){
 
 // ==================== RPG统计更新 ====================
 function _rpgCorrect(){
+  _trackSubject(_curSubject(),true);
   _gameState.combo++;
   if(_gameState.combo>_gameState.maxCombo)_gameState.maxCombo=_gameState.combo;
   _gameState.totalCorrect++;
@@ -478,6 +498,16 @@ function _rpgCorrect(){
 }
 
 function _rpgWrong(){
+  // 收集错题 + 科目统计
+  var _curQ=null;
+  if(_gameState.mode==="adventure"&&GAME_DATA.adventure[_gameState.advLevel]){
+    _curQ=GAME_DATA.adventure[_gameState.advLevel].questions[_gameState.advQuestion];
+    _curQ.subject=GAME_DATA.adventure[_gameState.advLevel].subject;
+  }else if(_gameState.mode==="quickAnswer"&&GAME_DATA.quickAnswer[_gameState.qaIndex]){
+    _curQ=GAME_DATA.quickAnswer[_gameState.qaIndex];
+  }
+  if(_curQ)_addWrongQuestion(_curQ);
+  _trackSubject(_curSubject(),false);
   _gameState.combo=0;
   _gameState.totalAnswered++;
   _gameState.hp=Math.max(0,_gameState.hp-20);
@@ -513,6 +543,11 @@ function _openGame(){
     _gameState.feBestScore=save.feBestScore||0;
     _gameState.qaBestScore=save.qaBestScore||0;
     _gameState.fbBestScore=save.fbBestScore||0;
+    _gameState.wrongBook=(save.wrongBook||[]).slice();
+    _gameState.checkInData=save.checkInData||{lastCheckIn:null,streak:0,totalDays:0,dates:[]};
+    _gameState.studyTime=save.studyTime||{total:0,byDate:{}};
+    _gameState.subjectStats=save.subjectStats||{};
+    _gameState.examBestScore=save.examBest||0;
   }else{
     // 无存档，初始化
     _gameState.hp=100;_gameState.maxHp=100;_gameState.combo=0;_gameState.maxCombo=0;
@@ -520,11 +555,20 @@ function _openGame(){
     _gameState.items={hint:0,revive:0,freeze:0};
   }
   _gameState.combo=0; // 每次进入重置当前连击
+  _gameState.gameStartTime=Date.now();
+  _checkIn(); // 每日自动打卡
   var ov=document.getElementById("gameOverlay");
   if(ov){ov.style.display="flex";ov.classList.add("game-fade-in");}
   _renderLobby();
 }
 function _closeGame(){
+  // 记录学习时长
+  if(_gameState.gameStartTime){
+    var _elapsed=Math.floor((Date.now()-_gameState.gameStartTime)/1000);
+    if(_elapsed>0)_trackStudyTime(_elapsed);
+    _gameState.gameStartTime=null;
+  }
+  if(_gameState.examTimerInterval){clearInterval(_gameState.examTimerInterval);_gameState.examTimerInterval=null;}
   _gameState.active=false;_gameState.mode=null;_gameState.screen=null;
   if(_gameState.qaTimer){clearInterval(_gameState.qaTimer);_gameState.qaTimer=null;}
   var ov=document.getElementById("gameOverlay");
@@ -613,7 +657,8 @@ function _renderLobby(){
     {id:"adventure",icon:"🗺️",name:"专升本闯关大冒险",desc:"4关 × 5题 · 闯关得⭐",color:"linear-gradient(135deg,#00bcd4,#0288d1)",tag:"推荐"},
     {id:"findError",icon:"🔍",name:"考点消消乐",desc:"找Bug挑战 · 揪出高频坑点",color:"linear-gradient(135deg,#a855f7,#7c3aed)",tag:""},
     {id:"quickAnswer",icon:"⚡",name:"知识抢答",desc:"10秒限时 · 判断对错",color:"linear-gradient(135deg,#ff9800,#f57c00)",tag:"限时"},
-    {id:"fillBlank",icon:"📝",name:"记忆背诵闯关",desc:"填空游戏 · 巩固公式概念",color:"linear-gradient(135deg,#e91e63,#c2185b)",tag:""}
+    {id:"fillBlank",icon:"📝",name:"记忆背诵闯关",desc:"填空游戏 · 巩固公式概念",color:"linear-gradient(135deg,#e91e63,#c2185b)",tag:""},
+    {id:"exam",icon:"📝",name:"模拟考试",desc:"10题限时 · 实战模拟",color:"linear-gradient(135deg,#10b981,#059669)",tag:"新增"}
   ];
   var cards="";
   for(var i=0;i<modes.length;i++){
@@ -660,6 +705,12 @@ function _renderLobby(){
       '<button class="g-save-reset" onclick="_confirmResetSave()">🗑️</button>'+
     '</div>';
   }
+  var toolbar='<div class="g-lobby-toolbar">'+
+    '<button class="g-tool-btn" onclick="_showWrongBook()"><span class="g-tool-icon">📒</span><span class="g-tool-label">错题本</span>'+(_gameState.wrongBook.length>0?'<span class="g-tool-badge">'+_gameState.wrongBook.length+'</span>':'')+'</button>'+
+    '<button class="g-tool-btn" onclick="_showReport()"><span class="g-tool-icon">📊</span><span class="g-tool-label">学习报告</span></button>'+
+    '<button class="g-tool-btn" onclick="_generateShareCard()"><span class="g-tool-icon">📱</span><span class="g-tool-label">分享成绩</span></button>'+
+    '<button class="g-tool-btn '+(_hasCheckedInToday()?'g-tool-done':'')+'" onclick="_doCheckIn()"><span class="g-tool-icon">'+(_hasCheckedInToday()?'✅':'📅')+'</span><span class="g-tool-label">'+(_hasCheckedInToday()?'已打卡':'打卡')+'</span></button>'+
+  '</div>';
   _setScreen(
     '<div class="g-lobby">'+
       '<div class="g-lobby-header">'+
@@ -669,6 +720,7 @@ function _renderLobby(){
         '<p class="g-lobby-sub">所有题目100%贴合山西专升本考纲 · 边玩边学</p>'+
         rpgBar+
         saveBar+
+        toolbar+
       '</div>'+
       '<div class="g-mode-grid">'+cards+'</div>'+
       '<div class="g-lobby-footer">'+
@@ -704,6 +756,8 @@ function _doResetSave(){
   _gameState.advLevelStars=[0,0,0,0];_gameState.advBestStars=[0,0,0,0];_gameState.advUnlocked=1;
   _gameState.advWrongPoints=[];_gameState.advRetry=false;
   _gameState.feBestScore=0;_gameState.qaBestScore=0;_gameState.fbBestScore=0;
+  _gameState.wrongBook=[];_gameState.checkInData={lastCheckIn:null,streak:0,totalDays:0,dates:[]};
+  _gameState.studyTime={total:0,byDate:{}};_gameState.subjectStats={};_gameState.examBestScore=0;
   // 关闭弹窗
   var modals=document.querySelectorAll(".g-item-modal");
   modals.forEach(function(m){if(m.parentNode)m.parentNode.removeChild(m);});
@@ -716,6 +770,7 @@ function _selectMode(mode){
   else if(mode==="findError")_feStart();
   else if(mode==="quickAnswer")_qaStart();
   else if(mode==="fillBlank")_fbStart();
+  else if(mode==="exam")_examStart();
 }
 
 function _advStart(){
@@ -1343,4 +1398,466 @@ function handleGameInput(query){
     return null;
   }
   return null;
+}
+
+// ==================== 科目统计辅助 ====================
+function _curSubject(){
+  var mode=_gameState.mode;
+  if(mode==="adventure"&&GAME_DATA.adventure[_gameState.advLevel]){
+    return GAME_DATA.adventure[_gameState.advLevel].subject;
+  }
+  if(mode==="quickAnswer"&&GAME_DATA.quickAnswer[_gameState.qaIndex]){
+    return _guessSubject(GAME_DATA.quickAnswer[_gameState.qaIndex].question||"");
+  }
+  if(mode==="fillBlank"&&GAME_DATA.fillBlank[_gameState.fbIndex]){
+    return _guessSubject(GAME_DATA.fillBlank[_gameState.fbIndex].question||"");
+  }
+  if(mode==="findError"&&GAME_DATA.findError[_gameState.feIndex]){
+    var t=GAME_DATA.findError[_gameState.feIndex].type||"";
+    return t.indexOf("C语言")>=0?"C语言程序设计":t.indexOf("数学")>=0?"高等数学":t.indexOf("英语")>=0?"公共英语":"计算机基础";
+  }
+  return "";
+}
+function _trackSubject(subject,correct){
+  if(!subject)return;
+  if(!_gameState.subjectStats[subject])_gameState.subjectStats[subject]={correct:0,wrong:0,total:0};
+  _gameState.subjectStats[subject].total++;
+  if(correct)_gameState.subjectStats[subject].correct++;
+  else _gameState.subjectStats[subject].wrong++;
+}
+
+// ==================== 错题本系统 ====================
+function _addWrongQuestion(q,mode){
+  if(!q)return;
+  var entry={
+    question:q.question||q.title||"",
+    options:q.options||[],
+    answer:q.answer||"",
+    analysis:q.analysis||q.explanation||"",
+    point:q.point||"",
+    subject:q.subject||"",
+    mode:mode||_gameState.mode||"",
+    time:Date.now(),
+    retried:false
+  };
+  for(var i=0;i<_gameState.wrongBook.length;i++){
+    if(_gameState.wrongBook[i].question===entry.question)return;
+  }
+  _gameState.wrongBook.push(entry);
+  if(_gameState.wrongBook.length>50)_gameState.wrongBook.shift();
+  _autoSave();
+}
+function _showWrongBook(){
+  _gameState.screen="wrongBook";
+  var items="";
+  if(_gameState.wrongBook.length===0){
+    items='<div class="g-empty-state"><div class="g-empty-icon">🎉</div><div class="g-empty-text">还没有错题！继续加油～</div></div>';
+  }else{
+    for(var i=_gameState.wrongBook.length-1;i>=0;i--){
+      var w=_gameState.wrongBook[i];
+      items+='<div class="g-wrong-item">'+
+        '<div class="g-wrong-num">#'+(i+1)+'</div>'+
+        '<div class="g-wrong-subject">'+(w.subject||'未知科目')+'</div>'+
+        '<div class="g-wrong-question">'+_md(w.question)+'</div>'+
+        (w.options&&w.options.length?'<div class="g-wrong-opts">'+w.options.map(function(o){return '<div class="g-wrong-opt">'+o+'</div>';}).join('')+'</div>':'')+
+        '<div class="g-wrong-ans">正确答案：<span class="g-wrong-ans-hl">'+w.answer+'</span></div>'+
+        (w.analysis?'<div class="g-wrong-analysis">'+_md(w.analysis)+'</div>':'')+
+        (w.point?'<div class="g-wrong-point">📌 考点：'+w.point+'</div>':'')+
+        '<div class="g-wrong-time">'+_formatSaveTime(w.time)+'</div>'+
+        '<button class="g-btn g-btn-sm g-btn-danger" onclick="_removeWrongQuestion('+i+')">移除</button>'+
+      '</div>';
+    }
+  }
+  _setScreen(
+    '<div class="g-game-wrap">'+
+    '<div class="g-hud">'+
+      '<div class="g-hud-left"><span class="g-hud-back" onclick="_renderLobby()">← 返回</span></div>'+
+      '<div class="g-hud-center"><span class="g-hud-title">📒 错题本</span></div>'+
+      '<div class="g-hud-right"><span class="g-hud-count">'+_gameState.wrongBook.length+'题</span></div>'+
+    '</div>'+
+    '<div class="g-wrong-list">'+items+'</div>'+
+    (_gameState.wrongBook.length>0?'<button class="g-btn g-btn-danger" onclick="_clearWrongBook()">清空错题本</button>':'')+
+    '</div>'
+  );
+  _renderGameMath();
+}
+function _removeWrongQuestion(idx){
+  if(idx>=0&&idx<_gameState.wrongBook.length){
+    _gameState.wrongBook.splice(idx,1);
+    _autoSave();
+    _showWrongBook();
+  }
+}
+function _clearWrongBook(){
+  var modal=document.createElement("div");
+  modal.className="g-item-modal";
+  modal.innerHTML='<div class="g-item-modal-content g-reset-modal">'+
+    '<div class="g-reset-icon">⚠️</div>'+
+    '<div class="g-reset-title">清空错题本？</div>'+
+    '<div class="g-reset-desc">将删除所有'+_gameState.wrongBook.length+'道错题记录</div>'+
+    '<div class="g-reset-btns">'+
+      '<button class="g-btn g-btn-danger" onclick="_doClearWrongBook()">确认清空</button>'+
+      '<button class="g-btn g-btn-ghost" onclick="this.parentNode.parentNode.parentNode.remove()">取消</button>'+
+    '</div></div>';
+  document.body.appendChild(modal);
+}
+function _doClearWrongBook(){
+  _gameState.wrongBook=[];
+  _autoSave();
+  var modals=document.querySelectorAll(".g-item-modal");
+  modals.forEach(function(m){if(m.parentNode)m.parentNode.removeChild(m);});
+  _showWrongBook();
+}
+
+// ==================== 每日打卡系统 ====================
+function _checkIn(){
+  var today=new Date().toDateString();
+  var ci=_gameState.checkInData;
+  if(ci.lastCheckIn===today)return false;
+  var yesterday=new Date(Date.now()-86400000).toDateString();
+  if(ci.lastCheckIn===yesterday){
+    ci.streak++;
+  }else{
+    ci.streak=1;
+  }
+  ci.lastCheckIn=today;
+  ci.totalDays++;
+  ci.dates.push(today);
+  if(ci.dates.length>365)ci.dates.shift();
+  var reward="";
+  if(ci.streak===7){_gameState.items.hint+=2;reward="7天连击！获得2张提示卡";}
+  else if(ci.streak===30){_gameState.items.hint+=5;_gameState.items.revive+=3;reward="30天连击！获得5张提示卡+3瓶复活药";}
+  else if(ci.streak%3===0&&ci.streak>0){_gameState.items.hint+=1;reward=ci.streak+"天连击！获得1张提示卡";}
+  _autoSave();
+  if(reward){
+    _scorePopup("🎁 "+reward,"#ffd700");
+    _confetti();
+  }
+  return true;
+}
+function _hasCheckedInToday(){
+  var ci=_gameState.checkInData;
+  return ci.lastCheckIn===new Date().toDateString();
+}
+function _doCheckIn(){
+  if(_hasCheckedInToday()){
+    _scorePopup("今天已打卡～明天再来！","#ffd700");
+    return;
+  }
+  _checkIn();
+  _renderLobby();
+  _confetti();
+}
+
+// ==================== 学习时间追踪 ====================
+function _trackStudyTime(seconds){
+  var today=new Date().toDateString();
+  if(!_gameState.studyTime)_gameState.studyTime={total:0,byDate:{}};
+  _gameState.studyTime.total=(_gameState.studyTime.total||0)+seconds;
+  _gameState.studyTime.byDate[today]=(_gameState.studyTime.byDate[today]||0)+seconds;
+  _autoSave();
+}
+
+// ==================== 科目猜测 ====================
+function _guessSubject(q){
+  q=q||"";
+  if(/sin|cos|tan|积分|导数|极限|微|函数|级数|矩阵/.test(q))return "高等数学";
+  if(/printf|scanf|int |char |指针|数组|循环|struct|switch|for|while/.test(q))return "C语言程序设计";
+  if(/is|are|was|were|have|has|the|that|which/.test(q.toLowerCase()))return "公共英语";
+  return "计算机基础";
+}
+
+// ==================== 模拟考试模式 ====================
+function _examStart(){
+  _gameState.mode="exam";
+  _gameState.screen="exam";
+  _gameState.examQuestions=[];
+  _gameState.examIndex=0;
+  _gameState.examScore=0;
+  _gameState.examCorrect=0;
+  _gameState.examStartTime=Date.now();
+  var pool=[];
+  GAME_DATA.adventure.forEach(function(lv){lv.questions.forEach(function(q){var cq=JSON.parse(JSON.stringify(q));cq.subject=lv.subject;cq.type="选择题";pool.push(cq);});});
+  GAME_DATA.quickAnswer.forEach(function(q){var cq=JSON.parse(JSON.stringify(q));cq.options=["A. 对","B. 错"];cq.type="判断题";cq.subject=_guessSubject(q.question);pool.push(cq);});
+  GAME_DATA.fillBlank.forEach(function(q){var cq=JSON.parse(JSON.stringify(q));cq.options=[];cq.type="填空题";cq.subject=_guessSubject(q.question);pool.push(cq);});
+  for(var i=0;i<10&&pool.length>0;i++){
+    var idx=Math.floor(Math.random()*pool.length);
+    _gameState.examQuestions.push(pool[idx]);
+    pool.splice(idx,1);
+  }
+  _examRenderQuestion();
+}
+function _examRenderQuestion(){
+  if(_gameState.examIndex>=_gameState.examQuestions.length){_examShowResult();return;}
+  var q=_gameState.examQuestions[_gameState.examIndex];
+  var elapsed=Math.floor((Date.now()-_gameState.examStartTime)/1000);
+  var min=Math.floor(elapsed/60),sec=elapsed%60;
+  var progress=(_gameState.examIndex+1)+"/"+_gameState.examQuestions.length;
+  var subjColor=q.subject==='高等数学'?'#ff9800':q.subject==='C语言程序设计'?'#a855f7':q.subject==='公共英语'?'#e91e63':'#00bcd4';
+  var optsHtml="";
+  if(q.options&&q.options.length){
+    for(var i=0;i<q.options.length;i++){
+      var letter=q.options[i].charAt(0);
+      optsHtml+='<button class="g-opt-btn" onclick="_examAnswer(\''+letter+'\')">'+
+        '<span class="g-opt-letter">'+letter+'</span>'+
+        '<span class="g-opt-text">'+_md(q.options[i].substring(3))+'</span></button>';
+    }
+  }else{
+    optsHtml='<input type="text" class="g-input" id="examInput" placeholder="输入答案..." onkeypress="if(event.key===\'Enter\')_examAnswer()">'+
+      '<button class="g-btn g-btn-primary" onclick="_examAnswer()">提交</button>';
+  }
+  _setScreen(
+    '<div class="g-game-wrap">'+
+    '<div class="g-hud">'+
+      '<div class="g-hud-left"><span class="g-hud-back" onclick="_examQuit()">← 退出</span></div>'+
+      '<div class="g-hud-center"><span class="g-hud-title">📝 模拟考试</span> · <span class="g-exam-timer" id="examTimer">⏱ '+min+':'+String(sec).padStart(2,"0")+'</span></div>'+
+      '<div class="g-hud-right"><span class="g-hud-prog">'+progress+'</span></div>'+
+    '</div>'+
+    '<div class="g-exam-progress-bar"><div class="g-exam-progress-fill" style="width:'+((_gameState.examIndex/_gameState.examQuestions.length)*100)+'%"></div></div>'+
+    '<div class="g-q-card">'+
+      '<span class="g-q-diff" style="color:'+subjColor+';border-color:currentColor">'+q.subject+'</span>'+
+      '<div class="g-q-text">'+_md(q.question)+'</div>'+
+    '</div>'+
+    '<div class="g-opts">'+optsHtml+'</div>'+
+    '</div>'
+  );
+  _renderGameMath();
+  if(_gameState.examTimerInterval)clearInterval(_gameState.examTimerInterval);
+  _gameState.examTimerInterval=setInterval(function(){
+    var el=Math.floor((Date.now()-_gameState.examStartTime)/1000);
+    var m=Math.floor(el/60),s=el%60;
+    var t=document.getElementById("examTimer");
+    if(t)t.innerHTML="⏱ "+m+":"+String(s).padStart(2,"0");
+  },1000);
+}
+function _examAnswer(letter){
+  if(_gameState.examTimerInterval){clearInterval(_gameState.examTimerInterval);_gameState.examTimerInterval=null;}
+  var q=_gameState.examQuestions[_gameState.examIndex];
+  var userAns=letter||"";
+  if(!letter){
+    var inp=document.getElementById("examInput");
+    if(inp)userAns=inp.value.trim().toLowerCase();
+  }
+  if(q.type==="判断题"&&letter){
+    userAns=letter==='A'?'对':'错';
+  }
+  var correct=false;
+  if(q.type==="填空题"){
+    correct=userAns===String(q.answer).toLowerCase();
+  }else{
+    correct=userAns.toUpperCase()===q.answer.toUpperCase();
+  }
+  if(correct){_gameState.examCorrect++;_gameState.examScore+=10;_trackSubject(q.subject,true);}
+  else{_trackSubject(q.subject,false);_addWrongQuestion(q,"exam");}
+  _gameState.examIndex++;
+  _sfxClick();
+  if(correct){_confetti();_scorePopup("✅ 正确！","#00e676");}
+  else{_scorePopup("❌ 答案："+q.answer,"#ff5252");}
+  setTimeout(function(){_examRenderQuestion();},800);
+}
+function _examQuit(){
+  if(_gameState.examTimerInterval){clearInterval(_gameState.examTimerInterval);_gameState.examTimerInterval=null;}
+  _renderLobby();
+}
+function _examShowResult(){
+  if(_gameState.examTimerInterval){clearInterval(_gameState.examTimerInterval);_gameState.examTimerInterval=null;}
+  var total=_gameState.examQuestions.length;
+  var score=_gameState.examScore;
+  var pct=total>0?Math.round(_gameState.examCorrect/total*100):0;
+  var elapsed=Math.floor((Date.now()-_gameState.examStartTime)/1000);
+  var min=Math.floor(elapsed/60),sec=elapsed%60;
+  var grade=pct>=90?"A+":pct>=80?"A":pct>=70?"B":pct>=60?"C":"D";
+  var gradeColor=pct>=80?"#00e676":pct>=60?"#ffd700":"#ff5252";
+  if(score>_gameState.examBestScore){_gameState.examBestScore=score;_autoSave();}
+  _trackStudyTime(elapsed);
+  _setScreen(
+    '<div class="g-game-wrap g-exam-result">'+
+    '<div class="g-exam-grade" style="color:'+gradeColor+'">'+grade+'</div>'+
+    '<div class="g-exam-score">'+score+'分</div>'+
+    '<div class="g-exam-detail">'+
+      '<div class="g-exam-stat"><span class="g-exam-stat-num">'+_gameState.examCorrect+'</span><span class="g-exam-stat-label">答对</span></div>'+
+      '<div class="g-exam-stat"><span class="g-exam-stat-num">'+(total-_gameState.examCorrect)+'</span><span class="g-exam-stat-label">答错</span></div>'+
+      '<div class="g-exam-stat"><span class="g-exam-stat-num">'+pct+'%</span><span class="g-exam-stat-label">正确率</span></div>'+
+      '<div class="g-exam-stat"><span class="g-exam-stat-num">'+min+':'+String(sec).padStart(2,"0")+'</span><span class="g-exam-stat-label">用时</span></div>'+
+    '</div>'+
+    '<div class="g-exam-best">最高分：'+_gameState.examBestScore+'</div>'+
+    '<div class="g-exam-actions">'+
+      '<button class="g-btn g-btn-primary" onclick="_examStart()">再考一次</button>'+
+      '<button class="g-btn g-btn-ghost" onclick="_generateShareCard(\'exam\')">📊 分享成绩</button>'+
+      '<button class="g-btn g-btn-ghost" onclick="_renderLobby()">返回大厅</button>'+
+    '</div></div>'
+  );
+  if(pct>=80){_confetti();_sfxLevelUp();}
+}
+
+// ==================== 学习路径推荐 ====================
+function _recommendPath(){
+  var stats=_gameState.subjectStats||{};
+  var subjects=["高等数学","C语言程序设计","公共英语","计算机基础"];
+  var weak=[];
+  subjects.forEach(function(s){
+    var st=stats[s]||{correct:0,wrong:0,total:0};
+    var rate=st.total>0?st.correct/st.total:0;
+    weak.push({subject:s,rate:rate,total:st.total,correct:st.correct,wrong:st.wrong});
+  });
+  weak.sort(function(a,b){return a.rate-b.rate;});
+  var html='<div class="g-path-list">';
+  weak.forEach(function(w,i){
+    var pct=Math.round(w.rate*100);
+    var color=pct<40?"#ff5252":pct<70?"#ffd700":"#00e676";
+    var icon=i===0?"🔥":i===1?"⚠️":i===2?"📊":"✅";
+    var advice=i===0?"重点攻克！建议先刷这个科目的题":i===1?"需要加强练习":i===2?"基本掌握，巩固提升":"掌握良好，保持即可";
+    html+='<div class="g-path-item" style="border-left-color:'+color+'">'+
+      '<div class="g-path-rank">'+icon+' 优先级'+(i+1)+'</div>'+
+      '<div class="g-path-subject">'+w.subject+'</div>'+
+      '<div class="g-path-bar"><div class="g-path-bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
+      '<div class="g-path-info">正确率 '+pct+'% · 答对'+w.correct+'题 / 答错'+w.wrong+'题</div>'+
+      '<div class="g-path-advice">'+advice+'</div>'+
+      '<button class="g-btn g-btn-sm g-btn-primary" onclick="_practiceSubject(\''+w.subject+'\')">开始练习</button>'+
+    '</div>';
+  });
+  html+='</div>';
+  return html;
+}
+function _practiceSubject(subject){
+  var idx={"计算机基础":0,"C语言程序设计":1,"高等数学":2,"公共英语":3}[subject];
+  if(idx!==undefined){
+    _gameState.mode="adventure";
+    _gameState.advLevel=idx;
+    _gameState.advQuestion=0;
+    _gameState.hp=_gameState.maxHp;
+    _gameState.combo=0;
+    _advRenderQuestion();
+  }
+}
+
+// ==================== 成绩分享卡片 ====================
+function _generateShareCard(context){
+  var canvas=document.createElement("canvas");
+  canvas.width=750;canvas.height=1000;
+  var ctx=canvas.getContext("2d");
+  var grad=ctx.createLinearGradient(0,0,0,1000);
+  grad.addColorStop(0,"#0a0e1a");grad.addColorStop(0.5,"#0f3460");grad.addColorStop(1,"#16213e");
+  ctx.fillStyle=grad;ctx.fillRect(0,0,750,1000);
+  ctx.fillStyle="rgba(0,240,255,0.05)";ctx.beginPath();ctx.arc(375,200,200,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="rgba(168,85,247,0.05)";ctx.beginPath();ctx.arc(375,800,150,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#00f0ff";ctx.font="bold 36px sans-serif";ctx.textAlign="center";
+  ctx.fillText("🎓 专升本·学习大冒险",375,80);
+  ctx.fillStyle="rgba(255,255,255,0.6)";ctx.font="18px sans-serif";
+  ctx.fillText("山西专升本计算机大类智能学习助手",375,115);
+  ctx.strokeStyle="rgba(0,240,255,0.3)";ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(100,145);ctx.lineTo(650,145);ctx.stroke();
+  var y=210;
+  ctx.font="bold 28px sans-serif";ctx.fillStyle="#fff";
+  ctx.fillText("📊 我的学习战绩",375,y);y+=50;
+  var stats=[
+    ["等级","Lv."+_gameState.level,"#00f0ff"],
+    ["总答题",_gameState.totalCorrect+"题","#00e676"],
+    ["最高连击",_gameState.maxCombo+"连击","#ffd700"],
+    ["总星数",_gameState.advTotalStars+"/20 ⭐","#ff9800"],
+    ["成就",_gameState.achievements.length+"/"+ACHIEVEMENTS.length+" 🏆","#a855f7"],
+    ["模拟考试最高分",_gameState.examBestScore+"分","#e91e63"]
+  ];
+  stats.forEach(function(s){
+    ctx.font="20px sans-serif";ctx.fillStyle="rgba(255,255,255,0.6)";ctx.textAlign="left";
+    ctx.fillText(s[0],120,y);
+    ctx.font="bold 26px sans-serif";ctx.fillStyle=s[2];ctx.textAlign="right";
+    ctx.fillText(s[1],630,y);
+    y+=50;
+  });
+  y+=20;
+  var ci=_gameState.checkInData;
+  ctx.font="bold 22px sans-serif";ctx.fillStyle="#ffd700";ctx.textAlign="center";
+  ctx.fillText("🔥 连续学习 "+ci.streak+" 天 · 累计 "+ci.totalDays+" 天",375,y);y+=50;
+  ctx.font="bold 24px sans-serif";ctx.fillStyle="#00f0ff";
+  ctx.fillText("AI智能答疑 + 游戏化闯关学习",375,y);y+=35;
+  ctx.font="16px sans-serif";ctx.fillStyle="rgba(255,255,255,0.4)";
+  ctx.fillText("快来加入我一起备考专升本吧！",375,y);y+=50;
+  ctx.strokeStyle="rgba(0,240,255,0.3)";ctx.lineWidth=2;
+  ctx.strokeRect(325,y,100,100);
+  ctx.font="12px sans-serif";ctx.fillStyle="rgba(255,255,255,0.3)";
+  ctx.fillText("扫码开始学习",375,y+120);
+  var link=document.createElement("a");
+  link.download="专升本学习战绩_"+new Date().toISOString().slice(0,10)+".png";
+  link.href=canvas.toDataURL("image/png");
+  link.click();
+  _scorePopup("📊 成绩卡片已保存！","#00f0ff");
+}
+
+// ==================== 雷达图 + 学习报告 ====================
+function _showReport(){
+  _gameState.screen="report";
+  var subjects=["高等数学","C语言程序设计","公共英语","计算机基础"];
+  var stats=subjects.map(function(s){
+    var st=_gameState.subjectStats[s]||{correct:0,wrong:0,total:0};
+    return {subject:s,rate:st.total>0?st.correct/st.total:0,correct:st.correct,wrong:st.wrong,total:st.total};
+  });
+  var cx=200,cy=200,r=140;
+  var n=subjects.length;
+  var gridPoly="";
+  for(var layer=1;layer<=4;layer++){
+    var pts=[];
+    for(var i=0;i<n;i++){
+      var angle=-Math.PI/2+i*2*Math.PI/n;
+      var rr=r*layer/4;
+      pts.push((cx+rr*Math.cos(angle))+","+(cy+rr*Math.sin(angle)));
+    }
+    gridPoly+='<polygon points="'+pts.join(" ")+'" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>';
+  }
+  var dataPts=[];
+  var dataCircles="";
+  for(var i=0;i<n;i++){
+    var angle=-Math.PI/2+i*2*Math.PI/n;
+    var rr=r*stats[i].rate;
+    var x=cx+rr*Math.cos(angle),y=cy+rr*Math.sin(angle);
+    dataPts.push(x+","+y);
+    dataCircles+='<circle cx="'+x+'" cy="'+y+'" r="4" fill="#00f0ff"/>';
+  }
+  var labels="";
+  for(var i=0;i<n;i++){
+    var angle=-Math.PI/2+i*2*Math.PI/n;
+    var lx=cx+(r+25)*Math.cos(angle),ly=cy+(r+25)*Math.sin(angle);
+    var pct=Math.round(stats[i].rate*100);
+    labels+='<text x="'+lx+'" y="'+ly+'" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="12">'+stats[i].subject+'</text>';
+    labels+='<text x="'+lx+'" y="'+(ly+16)+'" text-anchor="middle" fill="#00f0ff" font-size="14" font-weight="bold">'+pct+'%</text>';
+  }
+  var radarSvg='<svg viewBox="0 0 400 400" class="g-radar-svg">'+
+    gridPoly+
+    '<polygon points="'+dataPts.join(" ")+'" fill="rgba(0,240,255,0.15)" stroke="#00f0ff" stroke-width="2"/>'+
+    dataCircles+labels+'</svg>';
+  var totalMin=Math.floor((_gameState.studyTime.total||0)/60);
+  var totalH=Math.floor(totalMin/60),totalM=totalMin%60;
+  var timeStr=totalH>0?totalH+"小时"+totalM+"分":totalM+"分钟";
+  var acc=_gameState.totalAnswered>0?Math.round(_gameState.totalCorrect/_gameState.totalAnswered*100):0;
+  _setScreen(
+    '<div class="g-game-wrap">'+
+    '<div class="g-hud">'+
+      '<div class="g-hud-left"><span class="g-hud-back" onclick="_renderLobby()">← 返回</span></div>'+
+      '<div class="g-hud-center"><span class="g-hud-title">📊 学习报告</span></div>'+
+      '<div class="g-hud-right"></div>'+
+    '</div>'+
+    '<div class="g-report-section">'+
+      '<h3 class="g-report-h3">🎯 知识点掌握雷达图</h3>'+
+      '<div class="g-radar-wrap">'+radarSvg+'</div>'+
+    '</div>'+
+    '<div class="g-report-section">'+
+      '<h3 class="g-report-h3">📈 学习数据统计</h3>'+
+      '<div class="g-stats-grid">'+
+        '<div class="g-stat-card"><div class="g-stat-num" style="color:#00f0ff">'+_gameState.totalCorrect+'</div><div class="g-stat-label">累计答对</div></div>'+
+        '<div class="g-stat-card"><div class="g-stat-num" style="color:#00e676">'+acc+'%</div><div class="g-stat-label">总正确率</div></div>'+
+        '<div class="g-stat-card"><div class="g-stat-num" style="color:#ffd700">'+_gameState.maxCombo+'</div><div class="g-stat-label">最高连击</div></div>'+
+        '<div class="g-stat-card"><div class="g-stat-num" style="color:#ff9800">'+timeStr+'</div><div class="g-stat-label">学习时长</div></div>'+
+        '<div class="g-stat-card"><div class="g-stat-num" style="color:#a855f7">'+_gameState.achievements.length+'</div><div class="g-stat-label">成就解锁</div></div>'+
+        '<div class="g-stat-card"><div class="g-stat-num" style="color:#e91e63">'+_gameState.checkInData.streak+'</div><div class="g-stat-label">连续打卡</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="g-report-section">'+
+      '<h3 class="g-report-h3">🗺️ AI学习路径推荐</h3>'+
+      _recommendPath()+
+    '</div>'+
+    '<div class="g-report-actions">'+
+      '<button class="g-btn g-btn-primary" onclick="_generateShareCard()">📊 生成成绩卡片</button>'+
+    '</div></div>'
+  );
+  _renderGameMath();
 }
