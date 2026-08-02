@@ -1317,6 +1317,320 @@
             .game-banner-btn { padding: 8px 16px; font-size: 13px; }
             .float-game-btn { width: 48px; height: 48px; font-size: 22px; right: 14px; bottom: 72px; }
         }
+
+        /* ===== 成就通知 ===== */
+        .g-ach-notif {
+            position: fixed;
+            top: -120px;
+            right: 20px;
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, rgba(30,30,50,0.95), rgba(20,20,40,0.95));
+            border: 1px solid rgba(255,215,0,0.4);
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(255,215,0,0.2), 0 0 20px rgba(255,215,0,0.1);
+            backdrop-filter: blur(12px);
+            transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 320px;
+        }
+        .g-ach-notif.g-ach-show { top: 20px; }
+        .g-ach-notif-icon {
+            font-size: 36px;
+            filter: drop-shadow(0 2px 8px rgba(255,215,0,0.5));
+            animation: achIconSpin 0.6s ease;
+        }
+        @keyframes achIconSpin {
+            from { transform: rotate(-180deg) scale(0); }
+            to { transform: rotate(0) scale(1); }
+        }
+        .g-ach-notif-label {
+            font-size: 11px;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .g-ach-notif-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            margin: 2px 0;
+        }
+        .g-ach-notif-desc {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* ===== 道具栏 ===== */
+        .g-items-bar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 0 4px;
+            flex-wrap: wrap;
+        }
+        .g-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .g-item:hover:not(.g-item-empty) {
+            background: rgba(0,240,255,0.1);
+            border-color: rgba(0,240,255,0.4);
+            transform: translateY(-2px);
+        }
+        .g-item-empty {
+            opacity: 0.35;
+            cursor: default;
+        }
+        .g-item-icon { font-size: 16px; }
+        .g-item-count {
+            font-size: 11px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+        }
+        .g-item-sound { cursor: pointer; }
+
+        /* ===== 道具/成就弹窗 ===== */
+        .g-item-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 10002;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: modalFadeIn 0.2s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .g-item-modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(0,240,255,0.3);
+            border-radius: 18px;
+            padding: 28px 24px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalSlideUp {
+            from { transform: translateY(30px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .g-item-modal-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            animation: achIconSpin 0.6s ease;
+        }
+        .g-item-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #00f0ff;
+            margin-bottom: 10px;
+        }
+        .g-item-modal-text {
+            font-size: 15px;
+            color: #f0f0f5;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(0,240,255,0.05);
+            border-radius: 10px;
+        }
+
+        /* ===== 成就列表弹窗 ===== */
+        .g-ach-modal { max-width: 400px; }
+        .g-ach-modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffd700;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .g-ach-modal-count {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 400;
+        }
+        .g-ach-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .g-ach-list::-webkit-scrollbar { width: 4px; }
+        .g-ach-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+        .g-ach-list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+        .g-ach-list-item:not(.g-ach-locked):hover {
+            background: rgba(255,215,0,0.08);
+            border-color: rgba(255,215,0,0.3);
+        }
+        .g-ach-locked { opacity: 0.4; }
+        .g-ach-list-icon {
+            font-size: 28px;
+            width: 40px;
+            text-align: center;
+        }
+        .g-ach-list-info { flex: 1; text-align: left; }
+        .g-ach-list-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .g-ach-list-desc {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 2px;
+        }
+        .g-ach-list-check {
+            color: #00e676;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* ===== 宝箱系统 ===== */
+        .g-chest-screen {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .g-chest-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffd700;
+            margin: 16px 0 6px;
+            text-shadow: 0 0 20px rgba(255,215,0,0.3);
+        }
+        .g-chest-sub {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 30px;
+        }
+        .g-chests {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .g-chest {
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .g-chest:hover {
+            transform: translateY(-8px) scale(1.05);
+        }
+        .g-chest-box {
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            border-radius: 20px;
+            background: var(--cc, rgba(255,255,255,0.05));
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 20px var(--cc, transparent);
+            animation: chestFloat 2s ease-in-out infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes chestFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .g-chest:nth-child(2) .g-chest-box { animation-delay: 0.3s; }
+        .g-chest:nth-child(3) .g-chest-box { animation-delay: 0.6s; }
+        .g-chest-label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+        }
+        .g-chest-hint {
+            font-size: 12px;
+            color: #ffd700;
+            background: rgba(255,215,0,0.08);
+            padding: 6px 14px;
+            border-radius: 10px;
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .g-chest-result {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .g-chest-opened {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 56px;
+            border-radius: 24px;
+            background: var(--cc, rgba(255,255,255,0.05));
+            box-shadow: 0 8px 32px var(--cc, transparent);
+            margin: 0 auto 16px;
+            animation: chestOpen 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes chestOpen {
+            0% { transform: scale(0) rotate(-180deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+        .g-chest-reward-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        .g-chest-reward-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffd700;
+            margin-bottom: 4px;
+        }
+        .g-chest-reward-desc {
+            font-size: 14px;
+            color: #00f0ff;
+            margin-bottom: 20px;
+        }
+
+        /* ===== RPG成就项交互 ===== */
+        .g-rpg-ach {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .g-rpg-ach:hover {
+            background: rgba(255,215,0,0.1);
+            border-color: rgba(255,215,0,0.3);
+        }
+
+        /* ===== 移动端适配 ===== */
+        @media (max-width: 768px) {
+            .g-ach-notif { right: 10px; left: 10px; max-width: none; }
+            .g-chests { gap: 12px; }
+            .g-chest-box { width: 70px; height: 70px; font-size: 36px; }
+            .g-item-modal-content { padding: 20px 16px; }
+            .g-items-bar { gap: 6px; }
+            .g-item { padding: 4px 8px; }
+        }
     </style>
 </head>
 <body>
@@ -1372,9 +1686,9 @@
         <div id="gameContent"></div>
     </div>
 
-    <script src="data.js?v=20260802b"></script>
-    <script src="engine.js?v=20260802b"></script>
-    <script src="game.js?v=20260802b"></script>
+    <script src="data.js?v=20260802c"></script>
+    <script src="engine.js?v=20260802c"></script>
+    <script src="game.js?v=20260802c"></script>
     <script>
         // ========== 初始化 Markdown ==========
         marked.setOptions({
