@@ -1,8 +1,7 @@
 /**
- * 山西专升本计算机大类 - 沉浸式游戏化学习引擎 v2.0
- * 四种玩法：闯关大冒险、考点消消乐、知识抢答、记忆背诵
- * 全屏可视化游戏界面，霓虹冒险风格
- * 所有题目100%贴合山西专升本考纲
+ * 山西专升本计算机大类 - 沉浸式游戏化学习引擎 v3.0
+ * 全新RPG元素：角色系统、血条能量、连击 combo、关卡地图、倒计时、成就
+ * 霓虹冒险风格 · 所有题目100%贴合山西专升本考纲
  */
 
 // ==================== 游戏触发词 ====================
@@ -82,11 +81,24 @@ const GAME_DATA = {
 // ==================== 游戏状态 ====================
 let _gameState = {
   active:false, mode:null, screen:null,
+  // 闯关大冒险
   advLevel:0, advQuestion:0, advTotalStars:0, advLevelStars:[0,0,0,0],
   advWrongPoints:[], advRetry:false, advUnlocked:1, advBestStars:[0,0,0,0],
+  // 考点消消乐
   feIndex:0, feScore:0, feTotal:0, feShowResult:false,
-  qaIndex:0, qaScore:0, qaTotal:0, qaAnswered:false,
-  fbIndex:0, fbScore:0, fbTotal:0
+  // 知识抢答
+  qaIndex:0, qaScore:0, qaTotal:0, qaAnswered:false, qaTimer:null, qaTimeLeft:10,
+  // 记忆背诵
+  fbIndex:0, fbScore:0, fbTotal:0,
+  // RPG系统
+  hp:100, maxHp:100, combo:0, maxCombo:0, totalCorrect:0, totalAnswered:0,
+  exp:0, level:1, achievements:[],
+  // 道具系统
+  items:{hint:0,revive:0,freeze:0},
+  // 宝箱系统
+  chestReward:null,
+  // 音效开关
+  soundOn:true
 };
 
 // ==================== 工具函数 ====================
@@ -104,15 +116,306 @@ function _isGameTrigger(q){q=q.trim();for(var i=0;i<GAME_TRIGGERS.length;i++){if
 function _isGameExit(q){q=q.trim();for(var i=0;i<GAME_EXIT_CMDS.length;i++){if(q.indexOf(GAME_EXIT_CMDS[i])>=0)return true;}return false;}
 function _md(text){try{return marked.parse(text||"");}catch(e){return text||"";}}
 
+// ==================== 音效系统 (Web Audio API) ====================
+var _audioCtx=null;
+function _initAudio(){
+  if(!_audioCtx){
+    try{_audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  }
+  if(_audioCtx&&_audioCtx.state==="suspended"){_audioCtx.resume();}
+}
+function _tone(freq,duration,type,volume){
+  if(!_audioCtx||!_gameState.soundOn)return;
+  var osc=_audioCtx.createOscillator();
+  var gain=_audioCtx.createGain();
+  osc.type=type||"square";
+  osc.frequency.value=freq;
+  gain.gain.setValueAtTime(volume||0.12,_audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001,_audioCtx.currentTime+duration);
+  osc.connect(gain);
+  gain.connect(_audioCtx.destination);
+  osc.start();
+  osc.stop(_audioCtx.currentTime+duration);
+}
+function _sfxCorrect(){
+  _tone(523,0.08,"square");setTimeout(function(){_tone(659,0.08,"square");},60);
+  setTimeout(function(){_tone(784,0.12,"square");},120);
+}
+function _sfxWrong(){
+  _tone(200,0.12,"sawtooth",0.1);setTimeout(function(){_tone(150,0.18,"sawtooth",0.1);},80);
+}
+function _sfxLevelUp(){
+  var notes=[523,659,784,1047];
+  for(var i=0;i<notes.length;i++){(function(f,d){setTimeout(function(){_tone(f,0.1,"square");},d);})(notes[i],i*70);}
+}
+function _sfxCombo(){_tone(880,0.04,"square");setTimeout(function(){_tone(1100,0.08,"square");},40);}
+function _sfxTick(){_tone(1000,0.02,"sine",0.06);}
+function _sfxClick(){_tone(400,0.03,"sine",0.05);}
+function _sfxChest(){
+  _tone(600,0.05,"square");setTimeout(function(){_tone(800,0.05,"square");},50);
+  setTimeout(function(){_tone(1000,0.08,"square");},100);setTimeout(function(){_tone(1200,0.12,"square");},160);
+}
+function _sfxAchievement(){
+  _tone(659,0.06,"sine");setTimeout(function(){_tone(880,0.06,"sine");},50);
+  setTimeout(function(){_tone(1047,0.15,"sine");},100);
+}
+
+// ==================== 成就系统 ====================
+var ACHIEVEMENTS=[
+  {id:"first_correct",icon:"🎯",name:"初出茅庐",desc:"答对第一道题"},
+  {id:"combo_3",icon:"🔥",name:"小试牛刀",desc:"达成3连击"},
+  {id:"combo_5",icon:"⚡",name:"连击大师",desc:"达成5连击"},
+  {id:"combo_10",icon:"💫",name:"连击之王",desc:"达成10连击"},
+  {id:"perfect_level",icon:"🌟",name:"满分通关",desc:"单关5题全对"},
+  {id:"level_5",icon:"⭐",name:"升级达人",desc:"角色达到5级"},
+  {id:"no_hp_loss",icon:"🛡️",name:"毫发无伤",desc:"满血完成5题以上"},
+  {id:"score_30",icon:"🏆",name:"学霸之路",desc:"累计答对30题"}
+];
+function _checkAchievements(){
+  for(var i=0;i<ACHIEVEMENTS.length;i++){
+    var a=ACHIEVEMENTS[i];
+    if(_gameState.achievements.indexOf(a.id)<0){
+      var unlocked=false;
+      if(a.id==="first_correct"&&_gameState.totalCorrect>=1)unlocked=true;
+      else if(a.id==="combo_3"&&_gameState.maxCombo>=3)unlocked=true;
+      else if(a.id==="combo_5"&&_gameState.maxCombo>=5)unlocked=true;
+      else if(a.id==="combo_10"&&_gameState.maxCombo>=10)unlocked=true;
+      else if(a.id==="perfect_level"&&_gameState.advLevelStars[_gameState.advLevel]===5)unlocked=true;
+      else if(a.id==="level_5"&&_gameState.level>=5)unlocked=true;
+      else if(a.id==="no_hp_loss"&&_gameState.hp===_gameState.maxHp&&_gameState.totalAnswered>=5)unlocked=true;
+      else if(a.id==="score_30"&&_gameState.totalCorrect>=30)unlocked=true;
+      if(unlocked){
+        _gameState.achievements.push(a.id);
+        _showAchievement(a);
+      }
+    }
+  }
+}
+function _showAchievement(a){
+  _sfxAchievement();
+  var notif=document.createElement("div");
+  notif.className="g-ach-notif";
+  notif.innerHTML='<div class="g-ach-notif-icon">'+a.icon+'</div>'+
+    '<div class="g-ach-notif-info">'+
+      '<div class="g-ach-notif-label">🏆 成就解锁！</div>'+
+      '<div class="g-ach-notif-name">'+a.name+'</div>'+
+      '<div class="g-ach-notif-desc">'+a.desc+'</div>'+
+    '</div>';
+  document.body.appendChild(notif);
+  setTimeout(function(){notif.classList.add("g-ach-show");},10);
+  setTimeout(function(){
+    notif.classList.remove("g-ach-show");
+    setTimeout(function(){if(notif.parentNode)notif.parentNode.removeChild(notif);},500);
+  },3500);
+}
+
+// ==================== 道具系统 ====================
+var ITEMS=[
+  {id:"hint",icon:"🔮",name:"提示卡",desc:"查看考点提示"},
+  {id:"revive",icon:"❤️",name:"复活药",desc:"恢复50点HP"},
+  {id:"freeze",icon:"⏰",name:"时间冻结",desc:"抢答模式+5秒"}
+];
+function _itemDrop(){
+  if(Math.random()<0.3){
+    var item=_rand(ITEMS);
+    _gameState.items[item.id]++;
+    _sfxChest();
+    _scorePopup("🎁 获得 "+item.icon+item.name+"！","#a855f7");
+  }
+}
+function _itemsBar(){
+  var html='<div class="g-items-bar">';
+  for(var i=0;i<ITEMS.length;i++){
+    var item=ITEMS[i];
+    var count=_gameState.items[item.id]||0;
+    html+='<div class="g-item '+(count>0?"":"g-item-empty")+'" '+(count>0?'onclick="_useItem(\''+item.id+'\')"':'')+' title="'+item.desc+'">'+
+      '<span class="g-item-icon">'+item.icon+'</span>'+
+      '<span class="g-item-count">×'+count+'</span>'+
+    '</div>';
+  }
+  html+='<div class="g-item g-item-sound" onclick="_toggleSound()" title="音效开关">'+
+    '<span class="g-item-icon">'+(_gameState.soundOn?"🔊":"🔇")+'</span>'+
+  '</div>';
+  return html+'</div>';
+}
+function _useItem(itemId){
+  _sfxClick();
+  if(itemId==="hint"){
+    if(_gameState.items.hint<=0)return;
+    var q=null;
+    if(_gameState.mode==="adventure"&&GAME_DATA.adventure[_gameState.advLevel]){
+      q=GAME_DATA.adventure[_gameState.advLevel].questions[_gameState.advQuestion];
+    }
+    if(q&&q.point){
+      _gameState.items.hint--;
+      var hintModal=document.createElement("div");
+      hintModal.className="g-item-modal";
+      hintModal.innerHTML='<div class="g-item-modal-content">'+
+        '<div class="g-item-modal-icon">🔮</div>'+
+        '<div class="g-item-modal-title">考点提示</div>'+
+        '<div class="g-item-modal-text">'+q.point+'</div>'+
+        '<button class="g-btn g-btn-primary" onclick="this.parentNode.parentNode.remove()">知道了</button>'+
+      '</div>';
+      document.body.appendChild(hintModal);
+    }
+  }else if(itemId==="revive"){
+    if(_gameState.items.revive<=0)return;
+    if(_gameState.hp>=_gameState.maxHp)return;
+    _gameState.items.revive--;
+    _gameState.hp=Math.min(_gameState.maxHp,_gameState.hp+50);
+    _flashScreen("rgba(255,82,82,0.15)");
+    _scorePopup("+50 HP","#ff5252");
+    _refreshHUD();
+  }else if(itemId==="freeze"){
+    if(_gameState.items.freeze<=0)return;
+    if(_gameState.mode!=="quickAnswer")return;
+    _gameState.items.freeze--;
+    _gameState.qaTimeLeft+=5;
+    var bar=document.getElementById("qaTimer");
+    if(bar){
+      bar.style.transition="none";
+      var curPct=Math.max(0,_gameState.qaTimeLeft/15*100);
+      bar.style.width=curPct+"%";
+      void bar.offsetWidth;
+      bar.style.transition="width "+_gameState.qaTimeLeft+"s linear";
+      bar.style.width="0%";
+    }
+    _scorePopup("+5秒","#00f0ff");
+  }
+}
+function _toggleSound(){
+  _gameState.soundOn=!_gameState.soundOn;
+  if(_gameState.soundOn){_initAudio();_sfxClick();}
+  _refreshHUD();
+}
+function _refreshHUD(){
+  if(_gameState.screen==="advQuestion")_advRenderQuestion();
+  else if(_gameState.screen==="findError")_feRender();
+  else if(_gameState.screen==="quickAnswer")_qaRender();
+  else if(_gameState.screen==="fillBlank")_fbRender();
+}
+
+// ==================== RPG角色系统 ====================
+function _getChar(mood){
+  var chars={
+    idle:'<div class="g-char g-char-idle"><span class="g-char-face">🤖</span></div>',
+    happy:'<div class="g-char g-char-happy"><span class="g-char-face">🤖</span><span class="g-char-emote">😄</span></div>',
+    sad:'<div class="g-char g-char-sad"><span class="g-char-face">🤖</span><span class="g-char-emote">😢</span></div>',
+    excited:'<div class="g-char g-char-excited"><span class="g-char-face">🤖</span><span class="g-char-emote">🤩</span></div>',
+    thinking:'<div class="g-char g-char-thinking"><span class="g-char-face">🤖</span><span class="g-char-emote">🤔</span></div>',
+    cool:'<div class="g-char g-char-cool"><span class="g-char-face">🤖</span><span class="g-char-emote">😎</span></div>'
+  };
+  return chars[mood]||chars.idle;
+}
+
+function _getCharSpeech(text){
+  return '<div class="g-char-speech"><span class="g-char-name">小芯</span><span class="g-char-text">'+text+'</span></div>';
+}
+
+// ==================== HP/能量条 ====================
+function _hpBar(){
+  var pct=Math.max(0,Math.round(_gameState.hp/_gameState.maxHp*100));
+  var color=pct>60?"#00e676":pct>30?"#ff9800":"#ff5252";
+  return '<div class="g-hp-wrap">'+
+    '<span class="g-hp-icon">❤️</span>'+
+    '<div class="g-hp-bar">'+
+      '<div class="g-hp-fill" style="width:'+pct+'%;background:'+color+';box-shadow:0 0 8px '+color+'"></div>'+
+      '<span class="g-hp-text">'+_gameState.hp+'/'+_gameState.maxHp+'</span>'+
+    '</div>'+
+  '</div>';
+}
+
+// ==================== 连击系统 ====================
+function _comboDisplay(){
+  if(_gameState.combo<2)return"";
+  var fire=_gameState.combo>=5?"🔥🔥🔥":_gameState.combo>=3?"🔥🔥":"🔥";
+  return '<div class="g-combo '+(_gameState.combo>=3?"g-combo-hot":"")+'">'+
+    '<span class="g-combo-num">'+_gameState.combo+'</span>'+
+    '<span class="g-combo-label">连击</span>'+
+    '<span class="g-combo-fire">'+fire+'</span>'+
+  '</div>';
+}
+
+// ==================== 分数飘字 ====================
+function _scorePopup(text,color){
+  var c=document.getElementById("gameContent");if(!c)return;
+  var p=document.createElement("div");
+  p.className="g-score-popup";
+  p.textContent=text;
+  p.style.color=color||"#ffd700";
+  p.style.left=(30+Math.random()*40)+"%";
+  p.style.top="40%";
+  c.appendChild(p);
+  setTimeout(function(){if(p.parentNode)p.parentNode.removeChild(p);},1500);
+}
+
+// ==================== 屏幕闪烁 ====================
+function _flashScreen(color){
+  var c=document.getElementById("gameContent");if(!c)return;
+  var f=document.createElement("div");
+  f.className="g-flash";
+  f.style.background=color||"rgba(0,230,118,0.2)";
+  c.appendChild(f);
+  setTimeout(function(){if(f.parentNode)f.parentNode.removeChild(f);},400);
+}
+
+// ==================== 屏幕震动 ====================
+function _shakeScreen(){
+  var c=document.getElementById("gameOverlay");
+  if(c){c.classList.add("g-screen-shake");setTimeout(function(){c.classList.remove("g-screen-shake");},400);}
+}
+
+// ==================== RPG统计更新 ====================
+function _rpgCorrect(){
+  _gameState.combo++;
+  if(_gameState.combo>_gameState.maxCombo)_gameState.maxCombo=_gameState.combo;
+  _gameState.totalCorrect++;
+  _gameState.totalAnswered++;
+  _gameState.exp+=10+_gameState.combo*2;
+  // 音效
+  if(_gameState.combo>=3)_sfxCombo();else _sfxCorrect();
+  // 升级检测
+  var need=_gameState.level*100;
+  if(_gameState.exp>=need){
+    _gameState.exp-=need;
+    _gameState.level++;
+    _gameState.maxHp+=20;
+    _gameState.hp=_gameState.maxHp;
+    setTimeout(function(){_flashScreen("rgba(255,215,0,0.3)");_confetti();_sfxLevelUp();_scorePopup("⬆️ 升级！Lv."+_gameState.level,"#ffd700");},300);
+  }
+  _scorePopup("+"+(10+_gameState.combo*2)+" EXP","#00f0ff");
+  // 道具掉落
+  _itemDrop();
+  // 成就检查
+  _checkAchievements();
+}
+
+function _rpgWrong(){
+  _gameState.combo=0;
+  _gameState.totalAnswered++;
+  _gameState.hp=Math.max(0,_gameState.hp-20);
+  _shakeScreen();
+  _flashScreen("rgba(255,82,82,0.2)");
+  _scorePopup("-20 HP","#ff5252");
+  _sfxWrong();
+  _checkAchievements();
+}
+
 // ==================== 覆盖层管理 ====================
 function _openGame(){
+  _initAudio();
   _gameState.active=true;
+  // 重置RPG状态
+  _gameState.hp=100;_gameState.maxHp=100;_gameState.combo=0;_gameState.maxCombo=0;
+  _gameState.totalCorrect=0;_gameState.totalAnswered=0;_gameState.exp=0;_gameState.level=1;
+  _gameState.items={hint:0,revive:0,freeze:0};
   var ov=document.getElementById("gameOverlay");
   if(ov){ov.style.display="flex";ov.classList.add("game-fade-in");}
   _renderLobby();
 }
 function _closeGame(){
   _gameState.active=false;_gameState.mode=null;_gameState.screen=null;
+  if(_gameState.qaTimer){clearInterval(_gameState.qaTimer);_gameState.qaTimer=null;}
   var ov=document.getElementById("gameOverlay");
   if(ov){ov.style.display="none";ov.classList.remove("game-fade-in");}
 }
@@ -136,6 +439,22 @@ function _renderGameMath(){
   }
 }
 function _stars(n,filled){var s="";for(var i=0;i<n;i++){s+=i<filled?'<span class="g-star g-star-fill">★</span>':'<span class="g-star">★</span>';}return s;}
+
+// ==================== 通用HUD ====================
+function _gameHUD(modeLabel,gradient,progText,scoreIcon,scoreVal){
+  return '<div class="g-hud">'+
+    '<div class="g-hud-left">'+
+      '<span class="g-hud-level" style="background:'+gradient+'">'+modeLabel+'</span>'+
+      '<span class="g-hud-prog">'+progText+'</span>'+
+    '</div>'+
+    '<div class="g-hud-right">'+
+      _hpBar()+
+      '<span class="g-hud-stars">'+scoreIcon+' '+scoreVal+'</span>'+
+      _comboDisplay()+
+      '<button class="g-btn-exit" onclick="_closeGame()">✕</button>'+
+    '</div>'+
+  '</div>'+_itemsBar();
+}
 
 // ==================== 粒子背景 ====================
 function _createParticles(){
@@ -176,29 +495,40 @@ function _confetti(){
 // ==================== 大厅界面 ====================
 function _renderLobby(){
   _gameState.mode="lobby";_gameState.screen="lobby";
+  if(_gameState.qaTimer){clearInterval(_gameState.qaTimer);_gameState.qaTimer=null;}
   _createParticles();
   var modes=[
-    {id:"adventure",icon:"🗺️",name:"专升本闯关大冒险",desc:"4关 × 5题 · 闯关得⭐",color:"linear-gradient(135deg,#00bcd4,#0288d1)"},
-    {id:"findError",icon:"🔍",name:"考点消消乐",desc:"找Bug挑战 · 揪出高频坑点",color:"linear-gradient(135deg,#a855f7,#7c3aed)"},
-    {id:"quickAnswer",icon:"⚡",name:"知识抢答",desc:"判断对错 · 节奏轻快",color:"linear-gradient(135deg,#ff9800,#f57c00)"},
-    {id:"fillBlank",icon:"📝",name:"记忆背诵闯关",desc:"填空游戏 · 巩固公式概念",color:"linear-gradient(135deg,#e91e63,#c2185b)"}
+    {id:"adventure",icon:"🗺️",name:"专升本闯关大冒险",desc:"4关 × 5题 · 闯关得⭐",color:"linear-gradient(135deg,#00bcd4,#0288d1)",tag:"推荐"},
+    {id:"findError",icon:"🔍",name:"考点消消乐",desc:"找Bug挑战 · 揪出高频坑点",color:"linear-gradient(135deg,#a855f7,#7c3aed)",tag:""},
+    {id:"quickAnswer",icon:"⚡",name:"知识抢答",desc:"10秒限时 · 判断对错",color:"linear-gradient(135deg,#ff9800,#f57c00)",tag:"限时"},
+    {id:"fillBlank",icon:"📝",name:"记忆背诵闯关",desc:"填空游戏 · 巩固公式概念",color:"linear-gradient(135deg,#e91e63,#c2185b)",tag:""}
   ];
   var cards="";
   for(var i=0;i<modes.length;i++){
     var m=modes[i];
     cards+='<div class="g-mode-card" style="--mc:'+m.color+'" onclick="_selectMode(\''+m.id+'\')">'+
+      (m.tag?'<div class="g-mode-tag">'+m.tag+'</div>':'')+
       '<div class="g-mode-icon">'+m.icon+'</div>'+
       '<div class="g-mode-name">'+m.name+'</div>'+
       '<div class="g-mode-desc">'+m.desc+'</div>'+
       '<div class="g-mode-play">▶ 开始</div>'+
       '</div>';
   }
+  // RPG状态栏
+  var rpgBar='<div class="g-rpg-bar">'+
+    '<div class="g-rpg-item"><span class="g-rpg-icon">⚡</span> Lv.'+_gameState.level+'</div>'+
+    '<div class="g-rpg-item"><span class="g-rpg-icon">⭐</span> '+_gameState.totalCorrect+'题</div>'+
+    '<div class="g-rpg-item"><span class="g-rpg-icon">🔥</span> 最高'+_gameState.maxCombo+'连击</div>'+
+    '<div class="g-rpg-item g-rpg-ach" onclick="_showAchievementsList()"><span class="g-rpg-icon">🏆</span> '+_gameState.achievements.length+'/'+ACHIEVEMENTS.length+'</div>'+
+  '</div>';
   _setScreen(
     '<div class="g-lobby">'+
       '<div class="g-lobby-header">'+
+        '<div class="g-lobby-char">'+_getChar("cool")+_getCharSpeech("欢迎回来！选一个玩法开始吧～")+'</div>'+
         '<div class="g-lobby-badge">🎮 游戏化学习</div>'+
         '<h1 class="g-lobby-title">专升本·学习大冒险</h1>'+
         '<p class="g-lobby-sub">所有题目100%贴合山西专升本考纲 · 边玩边学</p>'+
+        rpgBar+
       '</div>'+
       '<div class="g-mode-grid">'+cards+'</div>'+
       '<div class="g-lobby-footer">'+
@@ -220,7 +550,39 @@ function _advStart(){
   _gameState.mode="adventure";_gameState.advLevel=0;_gameState.advQuestion=0;
   _gameState.advTotalStars=0;_gameState.advLevelStars=[0,0,0,0];
   _gameState.advWrongPoints=[];_gameState.advRetry=false;
-  _advRenderQuestion();
+  // 重置HP
+  _gameState.hp=_gameState.maxHp;_gameState.combo=0;
+  _advShowMap();
+}
+
+// 关卡地图
+function _advShowMap(){
+  _gameState.screen="advMap";
+  var nodes="";
+  for(var i=0;i<4;i++){
+    var lv=GAME_DATA.adventure[i];
+    var locked=i>_gameState.advLevel;
+    var current=i===_gameState.advLevel;
+    var status=current?"current":locked?"locked":"done";
+    var stars=_gameState.advBestStars[i]||0;
+    nodes+='<div class="g-map-node g-map-'+status+'" style="--nc:'+lv.gradient+'" onclick="'+(locked?'':'_advRenderQuestion()')+'">'+
+      '<div class="g-map-icon">'+(locked?'🔒':lv.icon)+'</div>'+
+      '<div class="g-map-label">'+lv.subject+'</div>'+
+      '<div class="g-map-stars">'+(stars>0?_stars(5,stars):'')+'</div>'+
+      (current?'<div class="g-map-here">📍 你在这里</div>':'')+
+    '</div>';
+    if(i<3)nodes+='<div class="g-map-path '+(i<_gameState.advLevel?"g-map-path-done":"")+'"></div>';
+  }
+  _setScreen(
+    '<div class="g-game-wrap">'+
+      _gameHUD("🗺️ 闯关大冒险","linear-gradient(135deg,#00bcd4,#0288d1)","关卡地图","⭐",_gameState.advTotalStars)+
+      '<div class="g-map">'+
+        '<div class="g-map-title">'+_getChar("excited")+_getCharSpeech("选择关卡开始冒险！")+'</div>'+
+        '<div class="g-map-nodes">'+nodes+'</div>'+
+      '</div>'+
+      '<button class="g-btn g-btn-back" onclick="_renderLobby()">← 返回菜单</button>'+
+    '</div>'
+  );
 }
 
 function _advRenderQuestion(){
@@ -228,12 +590,14 @@ function _advRenderQuestion(){
   var lv=GAME_DATA.adventure[_gameState.advLevel];
   var q=lv.questions[_gameState.advQuestion];
   var diffColor=q.difficulty==="基础题"?"#00e676":q.difficulty==="易错题"?"#ff9800":"#ff5252";
+  var diffIcon=q.difficulty==="基础题"?"🌱":q.difficulty==="易错题"?"⚠️":"🔥";
   var opts="";
   for(var i=0;i<q.options.length;i++){
     var letter=q.options[i].charAt(0);
     opts+='<button class="g-opt-btn" onclick="_advAnswer(\''+letter+'\')">'+
       '<span class="g-opt-letter">'+letter+'</span>'+
       '<span class="g-opt-text">'+_md(q.options[i].substring(3))+'</span>'+
+      '<span class="g-opt-arrow">→</span>'+
       '</button>';
   }
   var progress="";
@@ -242,19 +606,10 @@ function _advRenderQuestion(){
   }
   _setScreen(
     '<div class="g-game-wrap">'+
-      '<div class="g-hud">'+
-        '<div class="g-hud-left">'+
-          '<span class="g-hud-level" style="background:'+lv.gradient+'">'+lv.icon+' '+lv.subject+'</span>'+
-          '<span class="g-hud-prog">第'+(_gameState.advQuestion+1)+'/5题</span>'+
-        '</div>'+
-        '<div class="g-hud-right">'+
-          '<span class="g-hud-stars">⭐ '+_gameState.advTotalStars+'</span>'+
-          '<button class="g-btn-exit" onclick="_closeGame()">✕</button>'+
-        '</div>'+
-      '</div>'+
+      _gameHUD(lv.icon+" "+lv.subject,lv.gradient,"第"+(_gameState.advQuestion+1)+"/5题","⭐",_gameState.advTotalStars)+
       '<div class="g-progress-dots">'+progress+'</div>'+
       '<div class="g-q-card">'+
-        '<div class="g-q-diff" style="color:'+diffColor+';border-color:'+diffColor+'">'+q.difficulty+'</div>'+
+        '<div class="g-q-diff" style="color:'+diffColor+';border-color:'+diffColor+'">'+diffIcon+' '+q.difficulty+'</div>'+
         '<div class="g-q-text">'+_md(q.question)+'</div>'+
       '</div>'+
       '<div class="g-opts">'+opts+'</div>'+
@@ -270,6 +625,7 @@ function _advAnswer(answer){
   var q=lv.questions[_gameState.advQuestion];
   if(answer==="不会"){
     _gameState.advWrongPoints.push(q.point);_gameState.advRetry=false;
+    _rpgWrong();
     _advShowFeedback(false,q,"没关系，来看看解析！");
     return;
   }
@@ -277,22 +633,28 @@ function _advAnswer(answer){
   if(correct){
     if(!_gameState.advRetry){_gameState.advTotalStars++;_gameState.advLevelStars[_gameState.advLevel]++;}
     _gameState.advRetry=false;
-    _advShowFeedback(true,q,_rand(["太棒了！🎉","答对了！💪","厉害！⭐","完美！✨","Nice！"]));
+    _rpgCorrect();
+    var encouragements=["太棒了！🎉","答对了！💪","厉害！⭐","完美！✨","Nice！","连击中！🔥"];
+    var enc=_gameState.combo>=3?"🔥 "+_gameState.combo+"连击！太强了！":_rand(encouragements);
+    _advShowFeedback(true,q,enc);
   }else{
     if(!_gameState.advRetry){
       _gameState.advRetry=true;
       _advShowRetry(q);
     }else{
       _gameState.advWrongPoints.push(q.point);_gameState.advRetry=false;
+      _rpgWrong();
       _advShowFeedback(false,q,"没关系，记住了下次就会！💪");
     }
   }
 }
 
 function _advShowRetry(q){
+  _flashScreen("rgba(255,152,0,0.15)");
   _setScreen(
     '<div class="g-game-wrap">'+
       '<div class="g-feedback g-feedback-wrong">'+
+        '<div class="g-feedback-char">'+_getChar("thinking")+'</div>'+
         '<div class="g-feedback-icon g-shake">❌</div>'+
         '<div class="g-feedback-title">答错了，再试一次！</div>'+
         '<div class="g-feedback-sub">💡 考点提示：'+(q.point||"")+'</div>'+
@@ -305,13 +667,16 @@ function _advShowRetry(q){
 
 function _advShowFeedback(correct,q,encouragement){
   _gameState.screen="advFeedback";
-  if(correct)_confetti();
+  if(correct){_confetti();_flashScreen("rgba(0,230,118,0.15)");}
+  var charMood=correct?(_gameState.combo>=3?"excited":"happy"):"sad";
+  var charSpeech=correct?"答对啦！继续加油！":"别灰心，记住这个考点！";
   _setScreen(
     '<div class="g-game-wrap">'+
       '<div class="g-feedback '+(correct?"g-feedback-correct":"g-feedback-wrong")+'">'+
+        '<div class="g-feedback-char">'+_getChar(charMood)+_getCharSpeech(charSpeech)+'</div>'+
         '<div class="g-feedback-icon '+(correct?"g-pop":"g-shake")+'">'+(correct?"✅":"📖")+'</div>'+
         '<div class="g-feedback-title">'+encouragement+'</div>'+
-        (correct?'<div class="g-feedback-answer">正确答案：'+q.answer+'</div>':'<div class="g-feedback-answer">正确答案：'+q.answer+'</div>')+
+        '<div class="g-feedback-answer">正确答案：'+q.answer+'</div>'+
         '<div class="g-feedback-analysis">'+_md(q.analysis)+'</div>'+
         '<button class="g-btn g-btn-primary" onclick="_advNext()">下一题 →</button>'+
       '</div>'+
@@ -335,29 +700,36 @@ function _advLevelComplete(){
   if(stars>_gameState.advBestStars[_gameState.advLevel])_gameState.advBestStars[_gameState.advLevel]=stars;
   _gameState.advUnlocked=Math.max(_gameState.advUnlocked,_gameState.advLevel+2);
   var msg=stars===5?"满分通关！太强了！🌟":stars>=3?"不错的表现，继续加油！💪":"这个科目还需要多练习哦！📚";
-  if(stars>=3)_confetti();
+  if(stars>=3){_confetti();_flashScreen("rgba(255,215,0,0.2)");}
   var isLast=_gameState.advLevel>=3;
+  // 3星以上可获得宝箱奖励
+  var canGetChest=stars>=3;
+  var nextCallback=isLast?"_advFinal()":"_advNextLevel()";
+  var nextBtn=canGetChest?
+    '<button class="g-btn g-btn-primary" onclick="_showChests(\''+nextCallback+'\')">🎁 开宝箱奖励</button>':
+    '<button class="g-btn g-btn-primary" onclick="'+nextCallback+'">'+(isLast?'查看总成绩 🏆':'下一关 →')+'</button>';
   _setScreen(
     '<div class="g-game-wrap">'+
       '<div class="g-level-complete">'+
+        '<div class="g-feedback-char">'+_getChar("excited")+_getCharSpeech(stars>=3?"通关啦！你太厉害了！":"通关了，继续努力！")+'</div>'+
         '<div class="g-lc-icon" style="background:'+lv.gradient+'">'+lv.icon+'</div>'+
         '<div class="g-lc-title">第'+(_gameState.advLevel+1)+'关通关！</div>'+
         '<div class="g-lc-subject">'+lv.subject+'</div>'+
         '<div class="g-lc-stars">'+_stars(5,stars)+'</div>'+
         '<div class="g-lc-score">'+stars+' / 5</div>'+
         '<div class="g-lc-msg">'+msg+'</div>'+
-        (isLast?
-          '<button class="g-btn g-btn-primary" onclick="_advFinal()">查看总成绩 🏆</button>':
-          '<button class="g-btn g-btn-primary" onclick="_advNextLevel()">下一关 →</button>')+
+        (canGetChest?'<div class="g-chest-hint">⭐ 3星以上通关 · 获得宝箱奖励！</div>':'')+
+        nextBtn+
         '<button class="g-btn g-btn-back" onclick="_renderLobby()">返回菜单</button>'+
       '</div>'+
     '</div>'
   );
+  _checkAchievements();
 }
 
 function _advNextLevel(){
   _gameState.advLevel++;_gameState.advQuestion=0;_gameState.advRetry=false;
-  _advRenderQuestion();
+  _advShowMap();
 }
 
 function _advFinal(){
@@ -382,12 +754,20 @@ function _advFinal(){
     for(var k=0;k<unique.length;k++)weak+='<div class="g-weak-item">• '+unique[k]+'</div>';
     weak+='<div class="g-weak-tip">💡 建议在答疑模式中输入关键词深入学习</div></div>';
   }
+  // RPG统计
+  var rpgStats='<div class="g-rpg-stats">'+
+    '<div class="g-rpg-stat">⚡ 最高连击：'+_gameState.maxCombo+'</div>'+
+    '<div class="g-rpg-stat">📊 正确率：'+(_gameState.totalAnswered>0?Math.round(_gameState.totalCorrect/_gameState.totalAnswered*100):0)+'%</div>'+
+    '<div class="g-rpg-stat">🏆 等级：Lv.'+_gameState.level+'</div>'+
+  '</div>';
   _setScreen(
     '<div class="g-game-wrap">'+
       '<div class="g-final">'+
+        '<div class="g-feedback-char">'+_getChar("cool")+_getCharSpeech("全部通关！你是真正的学霸！")+'</div>'+
         '<div class="g-final-trophy">🏆</div>'+
         '<div class="g-final-title">全部通关！</div>'+
         '<div class="g-final-total">'+total+' / 20 ⭐</div>'+
+        rpgStats+
         '<div class="g-final-breakdown">'+breakdown+'</div>'+
         weak+
         '<div class="g-final-btns">'+
@@ -397,6 +777,7 @@ function _advFinal(){
       '</div>'+
     '</div>'
   );
+  _checkAchievements();
   _gameState.active=false;_gameState.mode=null;
 }
 
@@ -404,6 +785,7 @@ function _advFinal(){
 function _feStart(){
   _gameState.mode="findError";_gameState.feIndex=0;_gameState.feScore=0;
   _gameState.feTotal=GAME_DATA.findError.length;_gameState.feShowResult=false;
+  _gameState.hp=_gameState.maxHp;_gameState.combo=0;
   _feRender();
 }
 
@@ -412,16 +794,7 @@ function _feRender(){
   var ch=GAME_DATA.findError[_gameState.feIndex];
   _setScreen(
     '<div class="g-game-wrap">'+
-      '<div class="g-hud">'+
-        '<div class="g-hud-left">'+
-          '<span class="g-hud-level" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">🔍 考点消消乐</span>'+
-          '<span class="g-hud-prog">第'+(_gameState.feIndex+1)+'/'+_gameState.feTotal+'题</span>'+
-        '</div>'+
-        '<div class="g-hud-right">'+
-          '<span class="g-hud-stars">✅ '+_gameState.feScore+'</span>'+
-          '<button class="g-btn-exit" onclick="_closeGame()">✕</button>'+
-        '</div>'+
-      '</div>'+
+      _gameHUD("🔍 考点消消乐","linear-gradient(135deg,#a855f7,#7c3aed)","第"+(_gameState.feIndex+1)+"/"+_gameState.feTotal+"题","✅",_gameState.feScore)+
       '<div class="g-q-card">'+
         '<div class="g-q-diff" style="color:#a855f7;border-color:#a855f7">'+ch.type+' · '+ch.title+'</div>'+
         '<div class="g-fe-code">'+_md(ch.code)+'</div>'+
@@ -454,10 +827,14 @@ function _feSubmit(){
 
 function _feShowResult(correct){
   var ch=GAME_DATA.findError[_gameState.feIndex];
-  if(correct){_gameState.feScore++;_confetti();}
+  if(correct){_gameState.feScore++;_rpgCorrect();_confetti();_flashScreen("rgba(0,230,118,0.15)");}
+  else{_rpgWrong();}
+  var charMood=correct?"excited":"sad";
+  var charSpeech=correct?"找对了！你有一双火眼金睛！":"没关系，看看正确答案！";
   _setScreen(
     '<div class="g-game-wrap">'+
       '<div class="g-feedback '+(correct?"g-feedback-correct":"g-feedback-wrong")+'">'+
+        '<div class="g-feedback-char">'+_getChar(charMood)+_getCharSpeech(charSpeech)+'</div>'+
         '<div class="g-feedback-icon '+(correct?"g-pop":"g-shake")+'">'+(correct?"✅":"📖")+'</div>'+
         '<div class="g-feedback-title">'+(correct?"找对了！太厉害了！":"来看看正确答案")+'</div>'+
         '<div class="g-feedback-section"><strong>错误所在：</strong></div>'+
@@ -481,30 +858,24 @@ function _feNext(){
   }
 }
 
-// ==================== 知识抢答 ====================
+// ==================== 知识抢答（带倒计时） ====================
 function _qaStart(){
   _gameState.mode="quickAnswer";_gameState.qaIndex=0;_gameState.qaScore=0;
   _gameState.qaTotal=GAME_DATA.quickAnswer.length;_gameState.qaAnswered=false;
+  _gameState.hp=_gameState.maxHp;_gameState.combo=0;
   _qaRender();
 }
 
 function _qaRender(){
   _gameState.screen="quickAnswer";_gameState.qaAnswered=false;
+  _gameState.qaTimeLeft=10;
   var q=GAME_DATA.quickAnswer[_gameState.qaIndex];
   _setScreen(
     '<div class="g-game-wrap">'+
-      '<div class="g-hud">'+
-        '<div class="g-hud-left">'+
-          '<span class="g-hud-level" style="background:linear-gradient(135deg,#ff9800,#f57c00)">⚡ 知识抢答</span>'+
-          '<span class="g-hud-prog">第'+(_gameState.qaIndex+1)+'/'+_gameState.qaTotal+'题</span>'+
-        '</div>'+
-        '<div class="g-hud-right">'+
-          '<span class="g-hud-stars">✅ '+_gameState.qaScore+'</span>'+
-          '<button class="g-btn-exit" onclick="_closeGame()">✕</button>'+
-        '</div>'+
-      '</div>'+
+      _gameHUD("⚡ 知识抢答","linear-gradient(135deg,#ff9800,#f57c00)","第"+(_gameState.qaIndex+1)+"/"+_gameState.qaTotal+"题","✅",_gameState.qaScore)+
+      '<div class="g-timer-bar"><div class="g-timer-fill" id="qaTimer"></div><span class="g-timer-text" id="qaTimerText">10s</span></div>'+
       '<div class="g-qa-card">'+
-        '<div class="g-qa-label">⚡ 快速判断</div>'+
+        '<div class="g-qa-label">⚡ 快速判断（10秒内作答！）</div>'+
         '<div class="g-qa-question">'+_md(q.question)+'</div>'+
       '</div>'+
       '<div class="g-qa-btns">'+
@@ -514,19 +885,49 @@ function _qaRender(){
       '<button class="g-btn g-btn-back" onclick="_renderLobby()">← 返回菜单</button>'+
     '</div>'
   );
+  _qaStartTimer();
+}
+
+function _qaStartTimer(){
+  if(_gameState.qaTimer)clearInterval(_gameState.qaTimer);
+  var bar=document.getElementById("qaTimer");
+  var text=document.getElementById("qaTimerText");
+  _gameState.qaTimeLeft=10;
+  if(bar){bar.style.transition="none";bar.style.width="100%";void bar.offsetWidth;bar.style.transition="width 10s linear";bar.style.width="0%";}
+  _gameState.qaTimer=setInterval(function(){
+    _gameState.qaTimeLeft--;
+    if(text)text.textContent=_gameState.qaTimeLeft+"s";
+    if(_gameState.qaTimeLeft<=3&&text){text.style.color="#ff5252";text.classList.add("g-timer-urgent");_sfxTick();}
+    if(_gameState.qaTimeLeft<=0){
+      clearInterval(_gameState.qaTimer);_gameState.qaTimer=null;
+      if(!_gameState.qaAnswered)_qaAnswer("超时");
+    }
+  },1000);
 }
 
 function _qaAnswer(answer){
   if(_gameState.qaAnswered)return;
   _gameState.qaAnswered=true;
+  if(_gameState.qaTimer){clearInterval(_gameState.qaTimer);_gameState.qaTimer=null;}
   var q=GAME_DATA.quickAnswer[_gameState.qaIndex];
-  var correct=_gcheck(answer,q.answer,"判断题");
-  if(correct){_gameState.qaScore++;_confetti();}
+  var correct;
+  if(answer==="超时"){
+    correct=false;
+    _rpgWrong();
+  }else{
+    correct=_gcheck(answer,q.answer,"判断题");
+    if(correct){_gameState.qaScore++;_rpgCorrect();_confetti();_flashScreen("rgba(0,230,118,0.15)");}
+    else{_rpgWrong();}
+  }
+  var charMood=correct?(_gameState.combo>=3?"excited":"happy"):"sad";
+  var title=answer==="超时"?"时间到！⏰":correct?"反应真快！⚡":"再想想~";
+  var charSpeech=correct?"答对啦！手速真快！":answer==="超时"?"超时了，下次快点！":"别灰心，记住这个知识点！";
   _setScreen(
     '<div class="g-game-wrap">'+
       '<div class="g-feedback '+(correct?"g-feedback-correct":"g-feedback-wrong")+'">'+
+        '<div class="g-feedback-char">'+_getChar(charMood)+_getCharSpeech(charSpeech)+'</div>'+
         '<div class="g-feedback-icon '+(correct?"g-pop":"g-shake")+'">'+(correct?"✅":"❌")+'</div>'+
-        '<div class="g-feedback-title">'+(correct?"反应真快！⚡":"再想想~")+'</div>'+
+        '<div class="g-feedback-title">'+title+'</div>'+
         '<div class="g-feedback-answer">正确答案：'+q.answer+'</div>'+
         '<div class="g-feedback-analysis">'+_md(q.explanation)+'</div>'+
         '<button class="g-btn g-btn-primary" onclick="_qaNext()">下一题 →</button>'+
@@ -548,6 +949,7 @@ function _qaNext(){
 function _fbStart(){
   _gameState.mode="fillBlank";_gameState.fbIndex=0;_gameState.fbScore=0;
   _gameState.fbTotal=GAME_DATA.fillBlank.length;
+  _gameState.hp=_gameState.maxHp;_gameState.combo=0;
   _fbRender();
 }
 
@@ -556,18 +958,9 @@ function _fbRender(){
   var q=GAME_DATA.fillBlank[_gameState.fbIndex];
   _setScreen(
     '<div class="g-game-wrap">'+
-      '<div class="g-hud">'+
-        '<div class="g-hud-left">'+
-          '<span class="g-hud-level" style="background:linear-gradient(135deg,#e91e63,#c2185b)">📝 记忆背诵</span>'+
-          '<span class="g-hud-prog">第'+(_gameState.fbIndex+1)+'/'+_gameState.fbTotal+'题</span>'+
-        '</div>'+
-        '<div class="g-hud-right">'+
-          '<span class="g-hud-stars">✅ '+_gameState.fbScore+'</span>'+
-          '<button class="g-btn-exit" onclick="_closeGame()">✕</button>'+
-        '</div>'+
-      '</div>'+
+      _gameHUD("📝 记忆背诵","linear-gradient(135deg,#e91e63,#c2185b)","第"+(_gameState.fbIndex+1)+"/"+_gameState.fbTotal+"题","✅",_gameState.fbScore)+
       '<div class="g-q-card">'+
-        '<div class="g-q-diff" style="color:#e91e63;border-color:#e91e63">填空题</div>'+
+        '<div class="g-q-diff" style="color:#e91e63;border-color:#e91e63">📝 填空题</div>'+
         '<div class="g-q-text">'+_md(q.question)+'</div>'+
       '</div>'+
       '<div class="g-fe-input-wrap">'+
@@ -593,10 +986,14 @@ function _fbSubmit(){
 
 function _fbShowResult(correct){
   var q=GAME_DATA.fillBlank[_gameState.fbIndex];
-  if(correct){_gameState.fbScore++;_confetti();}
+  if(correct){_gameState.fbScore++;_rpgCorrect();_confetti();_flashScreen("rgba(0,230,118,0.15)");}
+  else{_rpgWrong();}
+  var charMood=correct?"happy":"sad";
+  var charSpeech=correct?"背对了！记忆力真好！":"没关系，多背几遍就记住了！";
   _setScreen(
     '<div class="g-game-wrap">'+
       '<div class="g-feedback '+(correct?"g-feedback-correct":"g-feedback-wrong")+'">'+
+        '<div class="g-feedback-char">'+_getChar(charMood)+_getCharSpeech(charSpeech)+'</div>'+
         '<div class="g-feedback-icon '+(correct?"g-pop":"g-shake")+'">'+(correct?"✅":"📖")+'</div>'+
         '<div class="g-feedback-title">'+(correct?"背对了！🧠":"再想想~")+'</div>'+
         '<div class="g-feedback-answer">正确答案：'+q.answer+'</div>'+
@@ -616,27 +1013,131 @@ function _fbNext(){
   }
 }
 
+// ==================== 成就列表弹窗 ====================
+function _showAchievementsList(){
+  _sfxClick();
+  var items="";
+  for(var i=0;i<ACHIEVEMENTS.length;i++){
+    var a=ACHIEVEMENTS[i];
+    var unlocked=_gameState.achievements.indexOf(a.id)>=0;
+    items+='<div class="g-ach-list-item '+(unlocked?"":"g-ach-locked")+'">'+
+      '<div class="g-ach-list-icon">'+(unlocked?a.icon:"🔒")+'</div>'+
+      '<div class="g-ach-list-info">'+
+        '<div class="g-ach-list-name">'+a.name+'</div>'+
+        '<div class="g-ach-list-desc">'+a.desc+'</div>'+
+      '</div>'+
+      (unlocked?'<div class="g-ach-list-check">✓</div>':'')+
+    '</div>';
+  }
+  var modal=document.createElement("div");
+  modal.className="g-item-modal";
+  modal.innerHTML='<div class="g-item-modal-content g-ach-modal">'+
+    '<div class="g-ach-modal-title">🏆 成就列表 <span class="g-ach-modal-count">'+_gameState.achievements.length+'/'+ACHIEVEMENTS.length+'</span></div>'+
+    '<div class="g-ach-list">'+items+'</div>'+
+    '<button class="g-btn g-btn-primary" onclick="this.parentNode.parentNode.remove()">关闭</button>'+
+  '</div>';
+  document.body.appendChild(modal);
+}
+
+// ==================== 宝箱系统 ====================
+var _chestData={chests:[],callback:""};
+function _showChests(callback){
+  var chests=[
+    {reward:"exp",icon:"💎",name:"经验宝石",desc:"+30 EXP",color:"#00f0ff"},
+    {reward:"hp",icon:"❤️",name:"生命药水",desc:"满血恢复",color:"#ff5252"},
+    {reward:"item",icon:"🎁",name:"神秘道具",desc:"随机道具×1",color:"#a855f7"}
+  ];
+  // 随机打乱
+  chests.sort(function(){return Math.random()-0.5;});
+  _chestData.chests=chests;
+  _chestData.callback=callback;
+  var cards="";
+  for(var i=0;i<chests.length;i++){
+    cards+='<div class="g-chest" onclick="_openChest('+i+')">'+
+      '<div class="g-chest-box" style="--cc:'+chests[i].color+'">📦</div>'+
+      '<div class="g-chest-label">宝箱 '+(i+1)+'</div>'+
+    '</div>';
+  }
+  _setScreen(
+    '<div class="g-game-wrap">'+
+      '<div class="g-chest-screen">'+
+        '<div class="g-feedback-char">'+_getChar("excited")+_getCharSpeech("选一个宝箱打开！")+'</div>'+
+        '<div class="g-chest-title">🎁 选择一个宝箱！</div>'+
+        '<div class="g-chest-sub">通关奖励 · 只能选一个</div>'+
+        '<div class="g-chests">'+cards+'</div>'+
+      '</div>'+
+    '</div>'
+  );
+}
+
+function _openChest(index){
+  _sfxChest();
+  var c=_chestData.chests[index];
+  var rewardHtml="";
+  if(c.reward==="exp"){
+    _gameState.exp+=30;
+    rewardHtml='<div class="g-chest-reward-icon">💎</div><div class="g-chest-reward-name">经验宝石</div><div class="g-chest-reward-desc">+30 EXP</div>';
+    _scorePopup("+30 EXP","#00f0ff");
+  }else if(c.reward==="hp"){
+    _gameState.hp=_gameState.maxHp;
+    rewardHtml='<div class="g-chest-reward-icon">❤️</div><div class="g-chest-reward-name">生命药水</div><div class="g-chest-reward-desc">HP满血恢复！</div>';
+    _flashScreen("rgba(255,82,82,0.15)");
+  }else if(c.reward==="item"){
+    var item=_rand(ITEMS);
+    _gameState.items[item.id]++;
+    rewardHtml='<div class="g-chest-reward-icon">'+item.icon+'</div><div class="g-chest-reward-name">'+item.name+'</div><div class="g-chest-reward-desc">道具×1</div>';
+    _scorePopup("🎁 "+item.icon+item.name+"！","#a855f7");
+  }
+  _confetti();
+  setTimeout(function(){
+    _setScreen(
+      '<div class="g-game-wrap">'+
+        '<div class="g-chest-result">'+
+          '<div class="g-feedback-char">'+_getChar("happy")+_getCharSpeech("收获满满！")+'</div>'+
+          '<div class="g-chest-opened" style="--cc:'+c.color+'">📦</div>'+
+          rewardHtml+
+          '<button class="g-btn g-btn-primary" onclick="'+_chestData.callback+'">继续 →</button>'+
+        '</div>'+
+      '</div>'
+    );
+    _checkAchievements();
+  },600);
+}
+
 // ==================== 通用完成界面 ====================
 function _gameComplete(name,score,total,icon){
   _gameState.screen="complete";
   var pct=Math.round(score/total*100);
   var msg=pct===100?"全对！太强了！🌟":pct>=70?"不错！大部分都掌握了！💪":"继续加油，多练习！📚";
-  if(pct>=70)_confetti();
+  if(pct>=70){_confetti();_flashScreen("rgba(255,215,0,0.2)");}
+  var canGetChest=pct>=70;
+  var rpgStats='<div class="g-rpg-stats">'+
+    '<div class="g-rpg-stat">⚡ 最高连击：'+_gameState.maxCombo+'</div>'+
+    '<div class="g-rpg-stat">📊 正确率：'+(_gameState.totalAnswered>0?Math.round(_gameState.totalCorrect/_gameState.totalAnswered*100):0)+'%</div>'+
+    '<div class="g-rpg-stat">🏆 等级：Lv.'+_gameState.level+'</div>'+
+  '</div>';
+  var playAgainBtn=canGetChest?
+    '<button class="g-btn g-btn-primary" onclick="_showChests(\'_renderLobby()\')">🎁 开宝箱奖励</button>':
+    '<button class="g-btn g-btn-primary" onclick="_renderLobby()">再玩一次</button>';
   _setScreen(
     '<div class="g-game-wrap">'+
       '<div class="g-complete">'+
+        '<div class="g-feedback-char">'+_getChar(pct>=70?"excited":"thinking")+_getCharSpeech(pct>=70?"太棒了！你完成了挑战！":"继续努力，下次会更好！")+'</div>'+
         '<div class="g-complete-icon">'+icon+'</div>'+
         '<div class="g-complete-title">'+name+' 完成！</div>'+
         '<div class="g-complete-score">'+score+' / '+total+'</div>'+
         '<div class="g-complete-stars">'+_stars(total,score)+'</div>'+
+        rpgStats+
         '<div class="g-complete-msg">'+msg+'</div>'+
+        (canGetChest?'<div class="g-chest-hint">⭐ 70%以上正确率 · 获得宝箱奖励！</div>':'')+
         '<div class="g-complete-btns">'+
-          '<button class="g-btn g-btn-primary" onclick="_renderLobby()">再玩一次</button>'+
+          playAgainBtn+
           '<button class="g-btn g-btn-ghost" onclick="_closeGame()">返回答疑</button>'+
         '</div>'+
       '</div>'+
     '</div>'
   );
+  _checkAchievements();
   _gameState.active=false;_gameState.mode=null;
 }
 
