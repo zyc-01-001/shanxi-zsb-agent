@@ -1,0 +1,27 @@
+{
+    "name": "数智芯·山西专升本计算机大类学习助手",
+    "short_name": "数智芯专升本",
+    "description": "AI智能答疑+游戏化闯关学习，涵盖C程序设计、高等数学、公共英语、计算机基础四大科目",
+    "start_url": "./",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#0a0e1a",
+    "theme_color": "#00f0ff",
+    "lang": "zh-CN",
+    "scope": "./",
+    "categories": ["education", "productivity"],
+    "icons": [
+        {
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230a0e1a'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%2300f0ff'%3E🎓%3C/text%3E%3C/svg%3E",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230a0e1a'/%3E%3Ctext x='256' y='320' font-size='260' text-anchor='middle' fill='%2300f0ff'%3E🎓%3C/text%3E%3C/svg%3E",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
