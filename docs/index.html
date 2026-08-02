@@ -1167,6 +1167,156 @@
             .g-final-row { padding: 8px 12px; }
             .g-final-subject { font-size: 13px; }
         }
+
+        /* ===== 游戏入口横幅（欢迎消息中） ===== */
+        .game-banner {
+            margin-top: 14px;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border: 2px solid rgba(0,240,255,0.25);
+            box-shadow: 0 4px 20px rgba(0,240,255,0.15);
+            transition: all 0.3s;
+            animation: bannerGlow 3s ease-in-out infinite;
+        }
+        @keyframes bannerGlow {
+            0%, 100% { box-shadow: 0 4px 20px rgba(0,240,255,0.15); border-color: rgba(0,240,255,0.25); }
+            50% { box-shadow: 0 6px 28px rgba(0,240,255,0.35); border-color: rgba(0,240,255,0.5); }
+        }
+        .game-banner:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 32px rgba(0,240,255,0.3);
+        }
+        .game-banner-inner {
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+        }
+        .game-banner-icon {
+            font-size: 40px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 2px 8px rgba(0,240,255,0.4));
+            animation: iconBounce 2s ease-in-out infinite;
+        }
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(5deg); }
+        }
+        .game-banner-text { flex: 1; }
+        .game-banner-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #00f0ff;
+            margin-bottom: 3px;
+            text-shadow: 0 0 8px rgba(0,240,255,0.3);
+        }
+        .game-banner-desc {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            line-height: 1.5;
+        }
+        .game-banner-btn {
+            flex-shrink: 0;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #00f0ff, #00bcd4);
+            border-radius: 24px;
+            color: #000;
+            font-size: 14px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 2px 12px rgba(0,240,255,0.4);
+            animation: btnPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes btnPulse {
+            0%, 100% { box-shadow: 0 2px 12px rgba(0,240,255,0.4); transform: scale(1); }
+            50% { box-shadow: 0 4px 18px rgba(0,240,255,0.6); transform: scale(1.05); }
+        }
+        .game-banner-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .game-banner-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            background: rgba(0,240,255,0.1);
+            border: 1px solid rgba(0,240,255,0.2);
+            border-radius: 10px;
+            color: rgba(0,240,255,0.8);
+        }
+
+        /* ===== 右下角浮动游戏按钮 ===== */
+        .float-game-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 80px;
+            z-index: 1000;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00f0ff, #a855f7);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 26px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,240,255,0.4);
+            transition: all 0.3s;
+            animation: floatPulse 2s ease-in-out infinite;
+        }
+        @keyframes floatPulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(0,240,255,0.4); }
+            50% { box-shadow: 0 4px 28px rgba(0,240,255,0.7), 0 0 0 8px rgba(0,240,255,0.1); }
+        }
+        .float-game-btn:hover {
+            transform: scale(1.15) rotate(10deg);
+        }
+        .float-game-btn .float-tip {
+            position: absolute;
+            right: 66px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #00f0ff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .float-game-btn:hover .float-tip { opacity: 1; }
+
+        /* 快捷栏游戏按钮脉冲 */
+        .quick-btn-game {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24) !important;
+            color: #fff !important;
+            border-color: transparent !important;
+            font-weight: 700;
+            animation: quickGamePulse 2s ease-in-out infinite;
+        }
+        @keyframes quickGamePulse {
+            0%, 100% { box-shadow: 0 2px 8px rgba(255,107,107,0.3); }
+            50% { box-shadow: 0 2px 14px rgba(255,107,107,0.6); }
+        }
+
+        @media (max-width: 768px) {
+            .game-banner-inner { padding: 14px; gap: 10px; }
+            .game-banner-icon { font-size: 32px; }
+            .game-banner-title { font-size: 15px; }
+            .game-banner-desc { font-size: 11px; }
+            .game-banner-btn { padding: 8px 16px; font-size: 13px; }
+            .float-game-btn { width: 48px; height: 48px; font-size: 22px; right: 14px; bottom: 72px; }
+        }
     </style>
 </head>
 <body>
@@ -1197,7 +1347,7 @@
         <button class="quick-btn" onclick="practice('')">🎲 随机刷题</button>
         <button class="quick-btn" onclick="practice('高等数学')">📝 高数刷题</button>
         <button class="quick-btn" onclick="practice('C语言程序设计')">📝 C语言刷题</button>
-        <button class="quick-btn" onclick="sendQuick('开始闯关')" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; border-color: transparent;">🎮 开始闯关</button>
+        <button class="quick-btn quick-btn-game" onclick="openGameDirect()">🎮 开始闯关</button>
     </div>
 
     <div class="chat-container" id="chatBox">
@@ -1210,15 +1360,21 @@
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
     </div>
 
+    <!-- ========== 右下角浮动游戏按钮 ========== -->
+    <button class="float-game-btn" onclick="openGameDirect()" title="点击进入游戏化学习">
+        🎮
+        <span class="float-tip">点击进入游戏学习 🎮</span>
+    </button>
+
     <!-- ========== 游戏覆盖层 ========== -->
     <div id="gameOverlay">
         <div id="gameParticles"></div>
         <div id="gameContent"></div>
     </div>
 
-    <script src="data.js?v=20260802"></script>
-    <script src="engine.js?v=20260802"></script>
-    <script src="game.js?v=20260802"></script>
+    <script src="data.js?v=20260802b"></script>
+    <script src="engine.js?v=20260802b"></script>
+    <script src="game.js?v=20260802b"></script>
     <script>
         // ========== 初始化 Markdown ==========
         marked.setOptions({
@@ -1236,6 +1392,33 @@
         const inputBox = document.getElementById('inputBox');
         const sendBtn = document.getElementById('sendBtn');
 
+        // ========== 直接打开游戏 ==========
+        function openGameDirect() {
+            if (typeof _openGame === 'function') {
+                _openGame();
+            }
+        }
+
+        // ========== 游戏入口横幅HTML ==========
+        function getGameBanner() {
+            return '<div class="game-banner" onclick="openGameDirect()">' +
+                '<div class="game-banner-inner">' +
+                    '<div class="game-banner-icon">🎮</div>' +
+                    '<div class="game-banner-text">' +
+                        '<div class="game-banner-title">游戏化学习 · 边玩边学</div>' +
+                        '<div class="game-banner-desc">4种玩法，46道真题，轻松掌握考点</div>' +
+                        '<div class="game-banner-tags">' +
+                            '<span class="game-banner-tag">🗺️ 闯关冒险</span>' +
+                            '<span class="game-banner-tag">🔍 找Bug</span>' +
+                            '<span class="game-banner-tag">⚡ 抢答</span>' +
+                            '<span class="game-banner-tag">📝 背诵</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="game-banner-btn">▶ 点击开始</div>' +
+                '</div>' +
+            '</div>';
+        }
+
         // ========== 渲染欢迎消息 ==========
         document.getElementById('welcomeMsg').innerHTML = marked.parse(
             '👋 你好！我是**山西统招专升本·计算机大类答疑助手**。\n\n' +
@@ -1243,10 +1426,9 @@
             '1. **讲解知识点**（高数、C语言、英语、计算机基础）\n' +
             '2. **查看考试信息**（分值、题型、时长）\n' +
             '3. **刷题练习**（随机出题，每次3道）\n' +
-            '4. **解题答疑**（发题目给我，给答案+解析）\n' +
-                '5. **游戏化学习**（输入"开始闯关"进入游戏模式）\n\n' +
-            '直接输入问题，或点击下方示例开始：'
-        ) + renderExampleQuestions();
+            '4. **解题答疑**（发题目给我，给答案+解析）\n\n' +
+            '👇 点击下方卡片，进入游戏化学习：'
+        ) + getGameBanner() + renderExampleQuestions();
         // KaTeX 加载后渲染欢迎消息中的公式（如有）
         document.addEventListener('DOMContentLoaded', function() {
             renderMath(document.getElementById('welcomeMsg'));
@@ -1437,9 +1619,9 @@
                 '你可以：\n' +
                 '- 输入**知识点**关键词，如 `极限`、`指针`、`积分`\n' +
                 '- 输入**考试信息**查看分值和题型\n' +
-                '- 点击上方**刷题**按钮开始练习\n' +
-                '- 输入**开始闯关**进入游戏化学习模式'
-            ) + renderExampleQuestions();
+                '- 点击上方**刷题**按钮开始练习\n\n' +
+                '👇 也可以点击下方卡片，进入游戏化学习：'
+            ) + getGameBanner() + renderExampleQuestions();
             chatBox.appendChild(welcomeDiv);
             renderMath(welcomeDiv);
             _currentQuestions = [];
