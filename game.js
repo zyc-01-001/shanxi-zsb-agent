@@ -101,6 +101,87 @@ let _gameState = {
   soundOn:true
 };
 
+// ==================== 存档系统 (localStorage) ====================
+var SAVE_KEY="sx_zsb_save_v1";
+function _saveGame(){
+  try{
+    var save={
+      // RPG系统
+      level:_gameState.level,exp:_gameState.exp,maxHp:_gameState.maxHp,
+      hp:_gameState.hp,maxCombo:_gameState.maxCombo,
+      totalCorrect:_gameState.totalCorrect,totalAnswered:_gameState.totalAnswered,
+      achievements:_gameState.achievements.slice(),
+      items:Object.assign({},_gameState.items),
+      soundOn:_gameState.soundOn,
+      // 闯关进度
+      advLevel:_gameState.advLevel,advQuestion:_gameState.advQuestion,
+      advTotalStars:_gameState.advTotalStars,advLevelStars:_gameState.advLevelStars.slice(),
+      advBestStars:_gameState.advBestStars.slice(),advUnlocked:_gameState.advUnlocked,
+      advWrongPoints:_gameState.advWrongPoints.slice(),advRetry:_gameState.advRetry,
+      // 各模式成绩
+      feBestScore:_gameState.feBestScore||0,
+      qaBestScore:_gameState.qaBestScore||0,
+      fbBestScore:_gameState.fbBestScore||0,
+      // 时间戳
+      saveTime:Date.now(),
+      lastMode:_gameState.mode||null
+    };
+    localStorage.setItem(SAVE_KEY,JSON.stringify(save));
+    return true;
+  }catch(e){return false;}
+}
+function _loadGame(){
+  try{
+    var raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return null;
+    return JSON.parse(raw);
+  }catch(e){return null;}
+}
+function _hasSave(){
+  return _loadGame()!==null;
+}
+function _applySave(save){
+  if(!save)return false;
+  _gameState.level=save.level||1;
+  _gameState.exp=save.exp||0;
+  _gameState.maxHp=save.maxHp||100;
+  _gameState.hp=save.hp||_gameState.maxHp;
+  _gameState.maxCombo=save.maxCombo||0;
+  _gameState.totalCorrect=save.totalCorrect||0;
+  _gameState.totalAnswered=save.totalAnswered||0;
+  _gameState.achievements=(save.achievements||[]).slice();
+  _gameState.items=save.items?Object.assign({},save.items):{hint:0,revive:0,freeze:0};
+  _gameState.soundOn=save.soundOn!==false;
+  _gameState.advLevel=save.advLevel||0;
+  _gameState.advQuestion=save.advQuestion||0;
+  _gameState.advTotalStars=save.advTotalStars||0;
+  _gameState.advLevelStars=(save.advLevelStars||[0,0,0,0]).slice();
+  _gameState.advBestStars=(save.advBestStars||[0,0,0,0]).slice();
+  _gameState.advUnlocked=save.advUnlocked||1;
+  _gameState.advWrongPoints=(save.advWrongPoints||[]).slice();
+  _gameState.advRetry=save.advRetry||false;
+  _gameState.feBestScore=save.feBestScore||0;
+  _gameState.qaBestScore=save.qaBestScore||0;
+  _gameState.fbBestScore=save.fbBestScore||0;
+  return true;
+}
+function _deleteSave(){
+  try{localStorage.removeItem(SAVE_KEY);return true;}catch(e){return false;}
+}
+function _formatSaveTime(ts){
+  if(!ts)return"";
+  var d=new Date(ts);
+  var now=new Date();
+  var diff=now-d;
+  if(diff<60000)return"刚刚";
+  if(diff<3600000)return Math.floor(diff/60000)+"分钟前";
+  if(diff<86400000)return Math.floor(diff/3600000)+"小时前";
+  return(d.getMonth()+1)+"月"+d.getDate()+"日 "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0");
+}
+function _autoSave(){
+  _saveGame();
+}
+
 // ==================== 工具函数 ====================
 function _gnorm(t){return(t||"").trim().toLowerCase().replace(/\s+/g,"");}
 function _gcheck(u,c,type){
@@ -248,6 +329,7 @@ function _useItem(itemId){
     }
     if(q&&q.point){
       _gameState.items.hint--;
+      _autoSave();
       var hintModal=document.createElement("div");
       hintModal.className="g-item-modal";
       hintModal.innerHTML='<div class="g-item-modal-content">'+
@@ -263,6 +345,7 @@ function _useItem(itemId){
     if(_gameState.hp>=_gameState.maxHp)return;
     _gameState.items.revive--;
     _gameState.hp=Math.min(_gameState.maxHp,_gameState.hp+50);
+    _autoSave();
     _flashScreen("rgba(255,82,82,0.15)");
     _scorePopup("+50 HP","#ff5252");
     _refreshHUD();
@@ -270,6 +353,7 @@ function _useItem(itemId){
     if(_gameState.items.freeze<=0)return;
     if(_gameState.mode!=="quickAnswer")return;
     _gameState.items.freeze--;
+    _autoSave();
     _gameState.qaTimeLeft+=5;
     var bar=document.getElementById("qaTimer");
     if(bar){
@@ -286,6 +370,7 @@ function _useItem(itemId){
 function _toggleSound(){
   _gameState.soundOn=!_gameState.soundOn;
   if(_gameState.soundOn){_initAudio();_sfxClick();}
+  _autoSave();
   _refreshHUD();
 }
 function _refreshHUD(){
@@ -388,6 +473,8 @@ function _rpgCorrect(){
   _itemDrop();
   // 成就检查
   _checkAchievements();
+  // 自动存档
+  _autoSave();
 }
 
 function _rpgWrong(){
@@ -399,16 +486,40 @@ function _rpgWrong(){
   _scorePopup("-20 HP","#ff5252");
   _sfxWrong();
   _checkAchievements();
+  _autoSave();
 }
 
 // ==================== 覆盖层管理 ====================
 function _openGame(){
   _initAudio();
   _gameState.active=true;
-  // 重置RPG状态
-  _gameState.hp=100;_gameState.maxHp=100;_gameState.combo=0;_gameState.maxCombo=0;
-  _gameState.totalCorrect=0;_gameState.totalAnswered=0;_gameState.exp=0;_gameState.level=1;
-  _gameState.items={hint:0,revive:0,freeze:0};
+  // 读取存档（不自动恢复游戏内进度，只恢复RPG属性和成就）
+  var save=_loadGame();
+  if(save){
+    // 恢复RPG属性和成就
+    _gameState.level=save.level||1;
+    _gameState.exp=save.exp||0;
+    _gameState.maxHp=save.maxHp||100;
+    _gameState.hp=save.hp||_gameState.maxHp;
+    _gameState.maxCombo=save.maxCombo||0;
+    _gameState.totalCorrect=save.totalCorrect||0;
+    _gameState.totalAnswered=save.totalAnswered||0;
+    _gameState.achievements=(save.achievements||[]).slice();
+    _gameState.items=save.items?Object.assign({},save.items):{hint:0,revive:0,freeze:0};
+    _gameState.soundOn=save.soundOn!==false;
+    _gameState.advBestStars=(save.advBestStars||[0,0,0,0]).slice();
+    _gameState.advUnlocked=save.advUnlocked||1;
+    _gameState.advTotalStars=save.advTotalStars||0;
+    _gameState.feBestScore=save.feBestScore||0;
+    _gameState.qaBestScore=save.qaBestScore||0;
+    _gameState.fbBestScore=save.fbBestScore||0;
+  }else{
+    // 无存档，初始化
+    _gameState.hp=100;_gameState.maxHp=100;_gameState.combo=0;_gameState.maxCombo=0;
+    _gameState.totalCorrect=0;_gameState.totalAnswered=0;_gameState.exp=0;_gameState.level=1;
+    _gameState.items={hint:0,revive:0,freeze:0};
+  }
+  _gameState.combo=0; // 每次进入重置当前连击
   var ov=document.getElementById("gameOverlay");
   if(ov){ov.style.display="flex";ov.classList.add("game-fade-in");}
   _renderLobby();
@@ -497,6 +608,7 @@ function _renderLobby(){
   _gameState.mode="lobby";_gameState.screen="lobby";
   if(_gameState.qaTimer){clearInterval(_gameState.qaTimer);_gameState.qaTimer=null;}
   _createParticles();
+  var save=_loadGame();
   var modes=[
     {id:"adventure",icon:"🗺️",name:"专升本闯关大冒险",desc:"4关 × 5题 · 闯关得⭐",color:"linear-gradient(135deg,#00bcd4,#0288d1)",tag:"推荐"},
     {id:"findError",icon:"🔍",name:"考点消消乐",desc:"找Bug挑战 · 揪出高频坑点",color:"linear-gradient(135deg,#a855f7,#7c3aed)",tag:""},
@@ -506,12 +618,19 @@ function _renderLobby(){
   var cards="";
   for(var i=0;i<modes.length;i++){
     var m=modes[i];
+    // 闯关模式显示存档进度
+    var progressHtml="";
+    if(m.id==="adventure"&&save&&save.advLevel!==undefined&&save.advLevel<4){
+      var advProgress="第"+(save.advLevel+1)+"关 第"+(save.advQuestion+1)+"/5题";
+      progressHtml='<div class="g-mode-save"><span class="g-save-dot"></span>存档：'+advProgress+'</div>';
+    }
     cards+='<div class="g-mode-card" style="--mc:'+m.color+'" onclick="_selectMode(\''+m.id+'\')">'+
       (m.tag?'<div class="g-mode-tag">'+m.tag+'</div>':'')+
       '<div class="g-mode-icon">'+m.icon+'</div>'+
       '<div class="g-mode-name">'+m.name+'</div>'+
       '<div class="g-mode-desc">'+m.desc+'</div>'+
-      '<div class="g-mode-play">▶ 开始</div>'+
+      progressHtml+
+      '<div class="g-mode-play">▶ '+(progressHtml?'继续':'开始')+'</div>'+
       '</div>';
   }
   // RPG状态栏
@@ -521,14 +640,35 @@ function _renderLobby(){
     '<div class="g-rpg-item"><span class="g-rpg-icon">🔥</span> 最高'+_gameState.maxCombo+'连击</div>'+
     '<div class="g-rpg-item g-rpg-ach" onclick="_showAchievementsList()"><span class="g-rpg-icon">🏆</span> '+_gameState.achievements.length+'/'+ACHIEVEMENTS.length+'</div>'+
   '</div>';
+  // 存档信息栏
+  var saveBar="";
+  if(save){
+    var saveTime=_formatSaveTime(save.saveTime);
+    saveBar='<div class="g-save-bar">'+
+      '<div class="g-save-info">'+
+        '<span class="g-save-icon">💾</span>'+
+        '<div class="g-save-details">'+
+          '<div class="g-save-title">存档进度</div>'+
+          '<div class="g-save-time">上次保存：'+saveTime+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="g-save-stats">'+
+        '<div class="g-save-stat"><span class="g-save-stat-icon">⭐</span> '+save.advTotalStars+'/20</div>'+
+        '<div class="g-save-stat"><span class="g-save-stat-icon">🏆</span> '+(save.achievements||[]).length+'/'+ACHIEVEMENTS.length+'</div>'+
+        '<div class="g-save-stat"><span class="g-save-stat-icon">🔮</span> '+(save.items?(save.items.hint||0)+(save.items.revive||0)+(save.items.freeze||0):0)+'</div>'+
+      '</div>'+
+      '<button class="g-save-reset" onclick="_confirmResetSave()">🗑️</button>'+
+    '</div>';
+  }
   _setScreen(
     '<div class="g-lobby">'+
       '<div class="g-lobby-header">'+
-        '<div class="g-lobby-char">'+_getChar("cool")+_getCharSpeech("欢迎回来！选一个玩法开始吧～")+'</div>'+
+        '<div class="g-lobby-char">'+_getChar("cool")+_getCharSpeech(save?"欢迎回来！你的进度已保存～":"欢迎！选一个玩法开始吧～")+'</div>'+
         '<div class="g-lobby-badge">🎮 游戏化学习</div>'+
         '<h1 class="g-lobby-title">专升本·学习大冒险</h1>'+
         '<p class="g-lobby-sub">所有题目100%贴合山西专升本考纲 · 边玩边学</p>'+
         rpgBar+
+        saveBar+
       '</div>'+
       '<div class="g-mode-grid">'+cards+'</div>'+
       '<div class="g-lobby-footer">'+
@@ -536,6 +676,38 @@ function _renderLobby(){
       '</div>'+
     '</div>'
   );
+}
+
+// ==================== 确认重置存档 ====================
+function _confirmResetSave(){
+  var modal=document.createElement("div");
+  modal.className="g-item-modal";
+  modal.innerHTML='<div class="g-item-modal-content g-reset-modal">'+
+    '<div class="g-reset-icon">⚠️</div>'+
+    '<div class="g-reset-title">重置存档？</div>'+
+    '<div class="g-reset-desc">所有进度、成就、道具都将清空，无法恢复！</div>'+
+    '<div class="g-reset-btns">'+
+      '<button class="g-btn g-btn-danger" onclick="_doResetSave()">确认重置</button>'+
+      '<button class="g-btn g-btn-ghost" onclick="this.parentNode.parentNode.parentNode.remove()">取消</button>'+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(modal);
+}
+function _doResetSave(){
+  _deleteSave();
+  // 重置所有状态
+  _gameState.hp=100;_gameState.maxHp=100;_gameState.combo=0;_gameState.maxCombo=0;
+  _gameState.totalCorrect=0;_gameState.totalAnswered=0;_gameState.exp=0;_gameState.level=1;
+  _gameState.achievements=[];
+  _gameState.items={hint:0,revive:0,freeze:0};
+  _gameState.advLevel=0;_gameState.advQuestion=0;_gameState.advTotalStars=0;
+  _gameState.advLevelStars=[0,0,0,0];_gameState.advBestStars=[0,0,0,0];_gameState.advUnlocked=1;
+  _gameState.advWrongPoints=[];_gameState.advRetry=false;
+  _gameState.feBestScore=0;_gameState.qaBestScore=0;_gameState.fbBestScore=0;
+  // 关闭弹窗
+  var modals=document.querySelectorAll(".g-item-modal");
+  modals.forEach(function(m){if(m.parentNode)m.parentNode.removeChild(m);});
+  _renderLobby();
 }
 
 // ==================== 闯关大冒险 ====================
@@ -547,11 +719,25 @@ function _selectMode(mode){
 }
 
 function _advStart(){
-  _gameState.mode="adventure";_gameState.advLevel=0;_gameState.advQuestion=0;
-  _gameState.advTotalStars=0;_gameState.advLevelStars=[0,0,0,0];
-  _gameState.advWrongPoints=[];_gameState.advRetry=false;
-  // 重置HP
-  _gameState.hp=_gameState.maxHp;_gameState.combo=0;
+  _gameState.mode="adventure";
+  // 尝试从存档恢复闯关进度
+  var save=_loadGame();
+  if(save&&save.advLevel!==undefined&&save.advLevel<4&&save.lastMode==="adventure"){
+    _gameState.advLevel=save.advLevel;
+    _gameState.advQuestion=save.advQuestion;
+    _gameState.advTotalStars=save.advTotalStars||0;
+    _gameState.advLevelStars=(save.advLevelStars||[0,0,0,0]).slice();
+    _gameState.advWrongPoints=(save.advWrongPoints||[]).slice();
+    _gameState.advRetry=false;
+    _gameState.hp=save.hp||_gameState.maxHp;
+    _gameState.combo=0;
+    _scorePopup("💾 存档已恢复！","#00f0ff");
+  }else{
+    _gameState.advLevel=0;_gameState.advQuestion=0;
+    _gameState.advTotalStars=0;_gameState.advLevelStars=[0,0,0,0];
+    _gameState.advWrongPoints=[];_gameState.advRetry=false;
+    _gameState.hp=_gameState.maxHp;_gameState.combo=0;
+  }
   _advShowMap();
 }
 
@@ -722,13 +908,15 @@ function _advLevelComplete(){
         nextBtn+
         '<button class="g-btn g-btn-back" onclick="_renderLobby()">返回菜单</button>'+
       '</div>'+
-    '</div>'
+  '</div>'
   );
   _checkAchievements();
+  _autoSave();
 }
 
 function _advNextLevel(){
   _gameState.advLevel++;_gameState.advQuestion=0;_gameState.advRetry=false;
+  _autoSave();
   _advShowMap();
 }
 
@@ -1088,6 +1276,7 @@ function _openChest(index){
     rewardHtml='<div class="g-chest-reward-icon">'+item.icon+'</div><div class="g-chest-reward-name">'+item.name+'</div><div class="g-chest-reward-desc">道具×1</div>';
     _scorePopup("🎁 "+item.icon+item.name+"！","#a855f7");
   }
+  _autoSave();
   _confetti();
   setTimeout(function(){
     _setScreen(
