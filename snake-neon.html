@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="霓虹贪吃蛇">
+<meta name="theme-color" content="#050714">
+<meta name="description" content="霓虹贪吃蛇 - 经典休闲小游戏，滑动控制发光蛇身吃食物">
+<link rel="manifest" href="manifest_snake.json">
+<link rel="apple-touch-icon" href="icon-snake.jpg">
+<link rel="icon" type="image/jpeg" href="icon-snake.jpg">
+<title>霓虹贪吃蛇</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#050714;
+  --cyan:#00f0ff;
+  --green:#00ff88;
+  --pink:#ff00aa;
+  --gold:#ffd700;
+  --red:#ff3366;
+  --text:#e0e8ff;
+  --dim:#445577;
+}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:radial-gradient(ellipse at center,#0a0e27 0%,#050714 60%,#020308 100%);
+  font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  color:var(--text);
+  user-select:none;-webkit-user-select:none;
+  touch-action:none;
+}
+#app{
+  display:flex;flex-direction:column;align-items:center;
+  width:100%;max-width:480px;margin:0 auto;
+  padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+  min-height:100vh;min-height:100dvh;
+}
+
+/* Header */
+.header{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0 6px;
+}
+.title{
+  font-size:22px;font-weight:800;
+  background:linear-gradient(135deg,#00ff88,#00f0ff,#00ff88);
+  background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:shine 3s linear infinite;
+}
+@keyframes shine{to{background-position:200% center;}}
+.subtitle{font-size:10px;color:var(--dim);margin-top:1px;}
+
+/* Scores */
+.scores{display:flex;gap:6px;}
+.score-box{
+  background:rgba(0,255,136,0.05);
+  border:1px solid rgba(0,255,136,0.15);
+  border-radius:10px;padding:5px 12px;text-align:center;min-width:62px;
+}
+.score-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;}
+.score-value{font-size:18px;font-weight:700;color:var(--green);text-shadow:0 0 10px rgba(0,255,136,0.4);}
+
+/* Stats bar */
+.stats-bar{
+  width:100%;display:flex;gap:12px;justify-content:center;
+  font-size:11px;color:var(--dim);padding:4px 0 6px;
+}
+.stats-bar b{color:var(--cyan);font-weight:600;}
+
+/* Toolbar */
+.toolbar{width:100%;display:flex;gap:6px;padding:2px 0 8px;}
+.btn{
+  flex:1;padding:9px 4px;border:none;border-radius:10px;
+  font-size:12px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  transition:all 0.12s;
+  background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,255,136,0.03));
+  border:1px solid rgba(0,255,136,0.2);
+  color:var(--green);
+}
+.btn:active{transform:scale(0.93);background:rgba(0,255,136,0.18);}
+.btn-icon{font-size:14px;}
+
+/* Canvas */
+.canvas-wrap{
+  position:relative;width:100%;
+  aspect-ratio:1;max-width:440px;
+  border-radius:16px;overflow:hidden;
+  box-shadow:0 0 30px rgba(0,255,136,0.1),0 0 60px rgba(0,240,255,0.05);
+}
+canvas{display:block;width:100%;height:100%;}
+
+/* Overlay (start/gameover) */
+.overlay{
+  position:absolute;inset:0;
+  background:rgba(5,7,20,0.88);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  z-index:50;opacity:1;transition:opacity 0.3s;
+}
+.overlay.hide{opacity:0;pointer-events:none;}
+.overlay-content{text-align:center;padding:20px;}
+.overlay-title{
+  font-size:24px;font-weight:800;margin-bottom:8px;
+  background:linear-gradient(135deg,#00ff88,#00f0ff);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.overlay-text{font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;}
+.overlay-score{font-size:40px;font-weight:800;color:var(--green);text-shadow:0 0 20px rgba(0,255,136,0.5);margin:4px 0 14px;}
+.start-btn{
+  padding:14px 40px;border:none;border-radius:14px;
+  font-size:16px;font-weight:700;cursor:pointer;
+  background:linear-gradient(135deg,#00ff88,#00cc66);
+  color:#000;
+  box-shadow:0 4px 20px rgba(0,255,136,0.4);
+  transition:all 0.15s;
+}
+.start-btn:active{transform:scale(0.95);box-shadow:0 2px 10px rgba(0,255,136,0.3);}
+
+/* Score popup */
+.float-text{
+  position:absolute;
+  font-weight:800;font-size:16px;
+  pointer-events:none;z-index:40;
+  animation:floatUp 0.8s ease-out forwards;
+}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-40px) scale(1.3);}}
+
+/* Toast */
+.toast{
+  position:fixed;top:50px;left:50%;
+  transform:translateX(-50%) translateY(-20px);
+  background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);
+  border-radius:20px;padding:8px 20px;font-size:13px;color:var(--green);
+  opacity:0;pointer-events:none;transition:all 0.3s;z-index:100;
+  white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Controls hint */
+.hint{
+  text-align:center;font-size:11px;color:var(--dim);
+  padding:8px 0 12px;line-height:1.5;
+}
+.hint b{color:rgba(0,255,136,0.7);}
+
+/* Speed indicator */
+.speed-bar{
+  width:100%;height:4px;background:rgba(255,255,255,0.05);
+  border-radius:2px;overflow:hidden;margin-bottom:4px;
+}
+.speed-fill{
+  height:100%;background:linear-gradient(90deg,#00ff88,#00f0ff,#ff00aa);
+  border-radius:2px;transition:width 0.3s;width:20%;
+}
+
+/* Dpad (optional buttons) */
+.dpad{
+  display:none;grid-template-areas:
+    '. up .'
+    'left . right'
+    '. down .';
+  gap:6px;padding:8px 0 4px;width:160px;margin:0 auto;
+}
+.dpad-btn{
+  width:44px;height:44px;border-radius:12px;border:none;
+  background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);
+  color:var(--green);font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.dpad-btn:active{background:rgba(0,255,136,0.2);transform:scale(0.9);}
+.dpad-up{grid-area:up;}.dpad-down{grid-area:down;}
+.dpad-left{grid-area:left;}.dpad-right{grid-area:right;}
+
+@media(max-height:740px){
+  .title{font-size:19px;}
+  .header{padding:6px 0 4px;}
+  .toolbar{padding:2px 0 4px;}
+  .btn{padding:7px 4px;font-size:11px;}
+  .hint{padding:4px 0 8px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="title">霓虹贪吃蛇</div>
+      <div class="subtitle">滑动屏幕控制方向</div>
+    </div>
+    <div class="scores">
+      <div class="score-box">
+        <div class="score-label">分数</div>
+        <div class="score-value" id="score">0</div>
+      </div>
+      <div class="score-box">
+        <div class="score-label">最佳</div>
+        <div class="score-value" id="best">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div>长度 <b id="length">3</b></div>
+    <div>|</div>
+    <div>连击 <b id="combo">0</b></div>
+    <div>|</div>
+    <div>速度 <b id="speedLvl">1</b></div>
+  </div>
+
+  <div class="speed-bar"><div class="speed-fill" id="speedFill"></div></div>
+
+  <div class="toolbar">
+    <button class="btn" onclick="startGame()"><span class="btn-icon">▶️</span>开始</button>
+    <button class="btn" onclick="pauseGame()"><span class="btn-icon" id="pauseIcon">⏸️</span><span id="pauseText">暂停</span></button>
+    <button class="btn" onclick="toggleSound()"><span class="btn-icon" id="soundIcon">🔊</span><span id="soundText">音效</span></button>
+    <button class="btn" onclick="toggleDpad()"><span class="btn-icon">🎮</span>按键</button>
+  </div>
+
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="gameCanvas"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="overlay-content">
+        <div class="overlay-title" id="overlayTitle">霓虹贪吃蛇</div>
+        <div class="overlay-text" id="overlayText">滑动屏幕控制蛇的方向<br>吃食物变长，撞墙或撞自己就结束</div>
+        <div class="overlay-score" id="overlayScore" style="display:none;"></div>
+        <button class="start-btn" onclick="startGame()">开始游戏</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dpad" id="dpad">
+    <button class="dpad-btn dpad-up" onclick="setDir('up')">▲</button>
+    <button class="dpad-btn dpad-left" onclick="setDir('left')">◀</button>
+    <button class="dpad-btn dpad-right" onclick="setDir('right')">▶</button>
+    <button class="dpad-btn dpad-down" onclick="setDir('down')">▼</button>
+  </div>
+
+  <div class="hint">
+    上下左右滑动控制 · 吃<b style="color:#00ff88">绿色食物</b>+1 · 吃<b style="color:#ffd700">金色食物</b>+5<br>
+    吃<b style="color:#ff00aa">粉色道具</b>触发特效 · 连续吃食物有连击加成
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== Config ====================
+var GRID = 20;          // 网格数量
+var CELL = 20;          // 每格像素（动态计算）
+var BASE_SPEED = 7;     // 基础速度（帧/秒）
+var MAX_SPEED = 18;     // 最大速度
+var COMBO_TIMEOUT = 3000; // 连击超时ms
+
+// ==================== State ====================
+var canvas, ctx;
+var snake = [];
+var direction = 'right';
+var nextDirection = 'right';
+var food = null;
+var specialFood = null;
+var specialFoodTimer = 0;
+var score = 0;
+var best = 0;
+var combo = 0;
+var comboTimer = 0;
+var speed = BASE_SPEED;
+var gameRunning = false;
+var gamePaused = false;
+var lastTick = 0;
+var accumTick = 0;
+var soundOn = true;
+var dpadVisible = false;
+var particles = [];
+var floatTexts = [];
+var trailEffects = [];
+var frameCount = 0;
+
+// Power-up states
+var powerUp = null; // 'speed', 'slow', 'double', 'ghost'
+var powerUpTimer = 0;
+var scoreMultiplier = 1;
+
+// ==================== Init ====================
+function init() {
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+
+  best = parseInt(localStorage.getItem('bestSnake') || '0');
+  soundOn = localStorage.getItem('soundSnake') !== 'off';
+
+  resizeCanvas();
+  updateSoundUI();
+  updateUI();
+
+  // Initial draw
+  drawBackground();
+
+  setupTouch();
+  setupKeyboard();
+  window.addEventListener('resize', function() {
+    resizeCanvas();
+    drawBackground();
+  });
+  window.addEventListener('orientationchange', function() {
+    setTimeout(function() { resizeCanvas(); drawBackground(); }, 200);
+  });
+
+  document.body.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+}
+
+function resizeCanvas() {
+  var wrap = document.getElementById('canvasWrap');
+  var w = wrap.clientWidth;
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr;
+  canvas.height = w * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = w + 'px';
+  ctx.scale(dpr, dpr);
+  CELL = w / GRID;
+}
+
+// ==================== Game Start ====================
+function startGame() {
+  snake = [
+    { x: 8, y: 10 },
+    { x: 7, y: 10 },
+    { x: 6, y: 10 }
+  ];
+  direction = 'right';
+  nextDirection = 'right';
+  score = 0;
+  combo = 0;
+  comboTimer = 0;
+  speed = BASE_SPEED;
+  powerUp = null;
+  powerUpTimer = 0;
+  scoreMultiplier = 1;
+  specialFood = null;
+  specialFoodTimer = 0;
+  particles = [];
+  floatTexts = [];
+  trailEffects = [];
+
+  spawnFood();
+  gameRunning = true;
+  gamePaused = false;
+  lastTick = performance.now();
+  accumTick = 0;
+
+  document.getElementById('overlay').classList.add('hide');
+  updateUI();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function pauseGame() {
+  if (!gameRunning) return;
+  gamePaused = !gamePaused;
+  document.getElementById('pauseIcon').textContent = gamePaused ? '▶️' : '⏸️';
+  document.getElementById('pauseText').textContent = gamePaused ? '继续' : '暂停';
+  if (!gamePaused) {
+    lastTick = performance.now();
+    requestAnimationFrame(gameLoop);
+  }
+}
+
+// ==================== Food ====================
+function spawnFood() {
+  var pos;
+  do {
+    pos = {
+      x: Math.floor(Math.random() * GRID),
+      y: Math.floor(Math.random() * GRID)
+    };
+  } while (snake.some(function(s) { return s.x === pos.x && s.y === pos.y; }) ||
+           (specialFood && specialFood.x === pos.x && specialFood.y === pos.y));
+  food = pos;
+  food.type = Math.random() < 0.15 ? 'gold' : 'normal';
+}
+
+function maybeSpawnSpecial() {
+  if (specialFood) return;
+  if (specialFoodTimer > 0) {
+    specialFoodTimer--;
+    return;
+  }
+  if (Math.random() < 0.02) {
+    var pos;
+    do {
+      pos = {
+        x: Math.floor(Math.random() * GRID),
+        y: Math.floor(Math.random() * GRID)
+      };
+    } while (snake.some(function(s) { return s.x === pos.x && s.y === pos.y; }) ||
+             (food && food.x === pos.x && food.y === pos.y));
+
+    var types = ['speed', 'slow', 'double', 'ghost'];
+    pos.type = types[Math.floor(Math.random() * types.length)];
+    pos.life = 80; // ticks to disappear
+    specialFood = pos;
+  }
+}
+
+// ==================== Direction ====================
+function setDir(dir) {
+  if (!gameRunning || gamePaused) return;
+  var opposites = { up:'down', down:'up', left:'right', right:'left' };
+  if (dir === opposites[direction]) return;
+  nextDirection = dir;
+}
+
+// ==================== Game Loop ====================
+function gameLoop(now) {
+  if (!gameRunning || gamePaused) return;
+
+  var delta = now - lastTick;
+  lastTick = now;
+  var tickInterval = 1000 / speed;
+  accumTick += delta;
+
+  while (accumTick >= tickInterval) {
+    tick();
+    accumTick -= tickInterval;
+    if (!gameRunning) break;
+  }
+
+  frameCount++;
+  render();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function tick() {
+  direction = nextDirection;
+
+  var head = { x: snake[0].x, y: snake[0].y };
+  if (direction === 'up') head.y--;
+  else if (direction === 'down') head.y++;
+  else if (direction === 'left') head.x--;
+  else if (direction === 'right') head.x++;
+
+  // Ghost mode (pass through walls)
+  if (powerUp === 'ghost') {
+    if (head.x < 0) head.x = GRID - 1;
+    if (head.x >= GRID) head.x = 0;
+    if (head.y < 0) head.y = GRID - 1;
+    if (head.y >= GRID) head.y = 0;
+  } else {
+    if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID) {
+      gameOver();
+      return;
+    }
+  }
+
+  // Self collision (ghost mode = no self collision)
+  if (powerUp !== 'ghost') {
+    for (var i = 0; i < snake.length; i++) {
+      if (snake[i].x === head.x && snake[i].y === head.y) {
+        gameOver();
+        return;
+      }
+    }
+  }
+
+  snake.unshift(head);
+
+  // Trail effect
+  trailEffects.push({ x: head.x, y: head.y, life: 8 });
+  if (trailEffects.length > 10) trailEffects.shift();
+
+  // Eat food
+  if (food && head.x === food.x && head.y === food.y) {
+    var points = (food.type === 'gold' ? 5 : 1) * scoreMultiplier;
+    combo++;
+    comboTimer = COMBO_TIMEOUT;
+
+    if (combo >= 3) {
+      points += Math.floor(combo / 3);
+    }
+
+    score += points;
+    addFloatText('+' + points, head.x, head.y, food.type === 'gold' ? '#ffd700' : '#00ff88');
+    spawnParticles(head.x, head.y, food.type === 'gold' ? '#ffd700' : '#00ff88', 12);
+
+    playSound(food.type === 'gold' ? 'gold' : 'eat');
+
+    // Speed up
+    speed = Math.min(MAX_SPEED, BASE_SPEED + Math.floor(score / 10));
+    if (powerUp === 'speed') speed = Math.min(MAX_SPEED + 4, speed + 4);
+    if (powerUp === 'slow') speed = Math.max(4, speed - 4);
+
+    spawnFood();
+
+    // Maybe spawn special after eating
+    if (Math.random() < 0.3) specialFoodTimer = 0;
+
+    if (navigator.vibrate) navigator.vibrate(20);
+  } else {
+    snake.pop();
+  }
+
+  // Special food
+  maybeSpawnSpecial();
+  if (specialFood) {
+    specialFood.life--;
+    if (specialFood.life <= 0) {
+      specialFood = null;
+      specialFoodTimer = 60;
+    }
+    if (specialFood && head.x === specialFood.x && head.y === specialFood.y) {
+      activatePowerUp(specialFood.type);
+      spawnParticles(specialFood.x, specialFood.y, getPowerColor(specialFood.type), 20);
+      addFloatText(getPowerName(specialFood.type) + '!', specialFood.x, specialFood.y, getPowerColor(specialFood.type));
+      playSound('powerup');
+      specialFood = null;
+      specialFoodTimer = 120;
+      if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+    }
+  }
+
+  // Combo timer
+  if (comboTimer > 0) {
+    comboTimer -= 1000 / speed;
+    if (comboTimer <= 0) combo = 0;
+  }
+
+  // Power-up timer
+  if (powerUp) {
+    powerUpTimer -= 1000 / speed;
+    if (powerUpTimer <= 0) {
+      addFloatText(getPowerName(powerUp) + '结束', head.x, head.y, '#666');
+      powerUp = null;
+      speed = Math.min(MAX_SPEED, BASE_SPEED + Math.floor(score / 10));
+    }
+  }
+
+  // Update particles
+  particles = particles.filter(function(p) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    return p.life > 0;
+  });
+
+  // Update float texts
+  floatTexts = floatTexts.filter(function(t) {
+    t.life--;
+    return t.life > 0;
+  });
+
+  // Update trail effects
+  trailEffects = trailEffects.filter(function(t) {
+    t.life--;
+    return t.life > 0;
+  });
+
+  updateUI();
+}
+
+// ==================== Power-ups ====================
+function activatePowerUp(type) {
+  powerUp = type;
+  powerUpTimer = 150; // ticks
+  if (type === 'double') scoreMultiplier = 2;
+  else scoreMultiplier = 1;
+}
+
+function getPowerName(type) {
+  return { speed:'极速', slow:'减速', double:'双倍', ghost:'穿墙' }[type] || '';
+}
+function getPowerColor(type) {
+  return { speed:'#ff3366', slow:'#00f0ff', double:'#ffd700', ghost:'#ff00aa' }[type] || '#fff';
+}
+
+// ==================== Particles ====================
+function spawnParticles(gx, gy, color, count) {
+  var cx = gx * CELL + CELL / 2;
+  var cy = gy * CELL + CELL / 2;
+  for (var i = 0; i < count; i++) {
+    var angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+    var speed = 1 + Math.random() * 3;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 15 + Math.random() * 10,
+      maxLife: 25,
+      color: color,
+      size: 2 + Math.random() * 3
+    });
+  }
+}
+
+function addFloatText(text, gx, gy, color) {
+  floatTexts.push({
+    text: text,
+    x: gx * CELL + CELL / 2,
+    y: gy * CELL + CELL / 2,
+    life: 30,
+    maxLife: 30,
+    color: color
+  });
+}
+
+// ==================== Render ====================
+function drawBackground() {
+  var w = canvas.width / (window.devicePixelRatio || 1);
+  ctx.fillStyle = '#050714';
+  ctx.fillRect(0, 0, w, w);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,255,136,0.03)';
+  ctx.lineWidth = 0.5;
+  for (var i = 0; i <= GRID; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * CELL, 0);
+    ctx.lineTo(i * CELL, w);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i * CELL);
+    ctx.lineTo(w, i * CELL);
+    ctx.stroke();
+  }
+}
+
+function render() {
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.width / dpr;
+
+  // Background with slight trail effect
+  ctx.fillStyle = 'rgba(5,7,20,0.35)';
+  ctx.fillRect(0, 0, w, w);
+
+  // Grid (faint)
+  ctx.strokeStyle = 'rgba(0,255,136,0.02)';
+  ctx.lineWidth = 0.5;
+  for (var i = 0; i <= GRID; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * CELL, 0);
+    ctx.lineTo(i * CELL, w);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i * CELL);
+    ctx.lineTo(w, i * CELL);
+    ctx.stroke();
+  }
+
+  // Trail effects
+  for (var t = 0; t < trailEffects.length; t++) {
+    var tr = trailEffects[t];
+    var alpha = tr.life / 8 * 0.3;
+    ctx.fillStyle = 'rgba(0,255,136,' + alpha + ')';
+    ctx.fillRect(tr.x * CELL + 2, tr.y * CELL + 2, CELL - 4, CELL - 4);
+  }
+
+  // Food (pulsing)
+  if (food) {
+    var pulse = Math.sin(frameCount * 0.15) * 0.15 + 0.85;
+    var fx = food.x * CELL + CELL / 2;
+    var fy = food.y * CELL + CELL / 2;
+    var fr = CELL * 0.35 * pulse;
+    var fColor = food.type === 'gold' ? '#ffd700' : '#00ff88';
+    var fGlow = food.type === 'gold' ? 'rgba(255,215,0,' : 'rgba(0,255,136,';
+
+    // Glow
+    var grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr * 2.5);
+    grad.addColorStop(0, fGlow + '0.4)');
+    grad.addColorStop(1, fGlow + '0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(fx - fr * 3, fy - fr * 3, fr * 6, fr * 6);
+
+    // Core
+    ctx.fillStyle = fColor;
+    ctx.beginPath();
+    ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Shine
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.arc(fx - fr * 0.3, fy - fr * 0.3, fr * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Special food
+  if (specialFood) {
+    var sfx = specialFood.x * CELL + CELL / 2;
+    var sfy = specialFood.y * CELL + CELL / 2;
+    var sfr = CELL * 0.38;
+    var sfColor = getPowerColor(specialFood.type);
+    var sfPulse = Math.sin(frameCount * 0.2) * 0.2 + 0.8;
+
+    // Blinking when about to disappear
+    if (specialFood.life < 20 && Math.floor(frameCount / 3) % 2 === 0) {
+      // skip drawing for blink effect
+    } else {
+      // Glow
+      var sgrad = ctx.createRadialGradient(sfx, sfy, 0, sfx, sfy, sfr * 3);
+      sgrad.addColorStop(0, sfColor + '99');
+      sgrad.addColorStop(1, sfColor + '00');
+      ctx.fillStyle = sgrad;
+      ctx.fillRect(sfx - sfr * 4, sfy - sfr * 4, sfr * 8, sfr * 8);
+
+      // Diamond shape
+      ctx.fillStyle = sfColor;
+      ctx.beginPath();
+      ctx.moveTo(sfx, sfy - sfr * sfPulse);
+      ctx.lineTo(sfx + sfr * sfPulse, sfy);
+      ctx.lineTo(sfx, sfy + sfr * sfPulse);
+      ctx.lineTo(sfx - sfr * sfPulse, sfy);
+      ctx.closePath();
+      ctx.fill();
+
+      // Inner glow
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.arc(sfx - sfr * 0.2, sfy - sfr * 0.2, sfr * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Snake
+  for (var si = snake.length - 1; si >= 0; si--) {
+    var seg = snake[si];
+    var sx = seg.x * CELL;
+    var sy = seg.y * CELL;
+    var sz = CELL - 2;
+
+    if (si === 0) {
+      // Head
+      var headColor = powerUp === 'ghost' ? '#ff00aa' : powerUp === 'speed' ? '#ff3366' : powerUp === 'double' ? '#ffd700' : '#00ff88';
+      var headGlow = powerUp === 'ghost' ? 'rgba(255,0,170,' : powerUp === 'speed' ? 'rgba(255,51,102,' : powerUp === 'double' ? 'rgba(255,215,0,' : 'rgba(0,255,136,';
+
+      // Glow
+      var hgrad = ctx.createRadialGradient(sx + CELL / 2, sy + CELL / 2, 0, sx + CELL / 2, sy + CELL / 2, CELL);
+      hgrad.addColorStop(0, headGlow + '0.5)');
+      hgrad.addColorStop(1, headGlow + '0)');
+      ctx.fillStyle = hgrad;
+      ctx.fillRect(sx - CELL / 2, sy - CELL / 2, CELL * 2, CELL * 2);
+
+      // Body
+      ctx.fillStyle = headColor;
+      roundRect(sx + 1, sy + 1, sz, sz, 4);
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = '#fff';
+      var eyeOffset = 4;
+      var eyeSize = CELL * 0.12;
+      var ex1, ey1, ex2, ey2;
+      if (direction === 'right') {
+        ex1 = sx + CELL - eyeOffset; ey1 = sy + eyeOffset + 1;
+        ex2 = sx + CELL - eyeOffset; ey2 = sy + CELL - eyeOffset - 1;
+      } else if (direction === 'left') {
+        ex1 = sx + eyeOffset; ey1 = sy + eyeOffset + 1;
+        ex2 = sx + eyeOffset; ey2 = sy + CELL - eyeOffset - 1;
+      } else if (direction === 'up') {
+        ex1 = sx + eyeOffset + 1; ey1 = sy + eyeOffset;
+        ex2 = sx + CELL - eyeOffset - 1; ey2 = sy + eyeOffset;
+      } else {
+        ex1 = sx + eyeOffset + 1; ey1 = sy + CELL - eyeOffset;
+        ex2 = sx + CELL - eyeOffset - 1; ey2 = sy + CELL - eyeOffset;
+      }
+      ctx.beginPath();
+      ctx.arc(ex1, ey1, eyeSize, 0, Math.PI * 2);
+      ctx.arc(ex2, ey2, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pupils
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(ex1, ey1, eyeSize * 0.5, 0, Math.PI * 2);
+      ctx.arc(ex2, ey2, eyeSize * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else {
+      // Body segments - gradient from head to tail
+      var ratio = si / snake.length;
+      var r = Math.floor(0 + (0 - 0) * ratio);
+      var g = Math.floor(255 * (1 - ratio * 0.5));
+      var b = Math.floor(136 * (1 - ratio * 0.3));
+      var bodyColor = powerUp === 'ghost' ? 'rgba(255,0,170,' + (1 - ratio * 0.5) + ')' :
+                       powerUp === 'speed' ? 'rgba(255,51,102,' + (1 - ratio * 0.5) + ')' :
+                       powerUp === 'double' ? 'rgba(255,215,0,' + (1 - ratio * 0.5) + ')' :
+                       'rgba(' + r + ',' + g + ',' + b + ',' + (1 - ratio * 0.4) + ')';
+
+      ctx.fillStyle = bodyColor;
+      var segSize = sz - ratio * 3;
+      roundRect(sx + (sz - segSize) / 2 + 1, sy + (sz - segSize) / 2 + 1, segSize, segSize, 3);
+      ctx.fill();
+    }
+  }
+
+  // Particles
+  for (var p = 0; p < particles.length; p++) {
+    var pt = particles[p];
+    var palpha = pt.life / pt.maxLife;
+    ctx.fillStyle = pt.color;
+    ctx.globalAlpha = palpha;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.size * palpha, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Float texts
+  for (var ft = 0; ft < floatTexts.length; ft++) {
+    var t = floatTexts[ft];
+    var talpha = t.life / t.maxLife;
+    var yOffset = (1 - talpha) * 30;
+    ctx.globalAlpha = talpha;
+    ctx.fillStyle = t.color;
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(t.text, t.x, t.y - yOffset);
+  }
+  ctx.globalAlpha = 1;
+
+  // Power-up indicator
+  if (powerUp) {
+    var pw = powerUpTimer / 150;
+    ctx.fillStyle = getPowerColor(powerUp);
+    ctx.globalAlpha = 0.8;
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(getPowerName(powerUp) + ' ' + Math.ceil(powerUpTimer / 10) + '步', 8, 16);
+    ctx.globalAlpha = 1;
+
+    // Bar
+    ctx.fillStyle = getPowerColor(powerUp);
+    ctx.globalAlpha = 0.6;
+    ctx.fillRect(8, 20, 80 * pw, 3);
+    ctx.globalAlpha = 1;
+  }
+
+  // Combo indicator
+  if (combo >= 2) {
+    ctx.fillStyle = '#ffd700';
+    ctx.globalAlpha = 0.9;
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(combo + 'x 连击!', w - 8, 16);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// ==================== Game Over ====================
+function gameOver() {
+  gameRunning = false;
+  if (score > best) {
+    best = score;
+    localStorage.setItem('bestSnake', best.toString());
+  }
+
+  // Death particles
+  var head = snake[0];
+  spawnParticles(head.x, head.y, '#ff3366', 25);
+
+  playSound('death');
+  if (navigator.vibrate) navigator.vibrate([50, 80, 50, 80, 100]);
+
+  // Show overlay after delay
+  setTimeout(function() {
+    document.getElementById('overlayTitle').textContent = '游戏结束';
+    document.getElementById('overlayText').innerHTML =
+      '长度 ' + snake.length + ' · 连击 ' + combo + 'x<br>再来一局？';
+    document.getElementById('overlayScore').style.display = 'block';
+    document.getElementById('overlayScore').textContent = score;
+    document.getElementById('overlay').classList.remove('hide');
+  }, 500);
+
+  updateUI();
+}
+
+// ==================== UI ====================
+function updateUI() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('best').textContent = best;
+  document.getElementById('length').textContent = snake.length || 3;
+  document.getElementById('combo').textContent = combo;
+  document.getElementById('speedLvl').textContent = Math.floor((speed - BASE_SPEED) / 1.5) + 1;
+  document.getElementById('speedFill').style.width =
+    Math.min(100, ((speed - BASE_SPEED) / (MAX_SPEED - BASE_SPEED)) * 80 + 20) + '%';
+}
+
+// ==================== Sound ====================
+var audioCtx = null;
+function getAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { return null; }
+  }
+  return audioCtx;
+}
+
+function playSound(type) {
+  if (!soundOn) return;
+  var ctx = getAudio();
+  if (!ctx) return;
+  var now = ctx.currentTime;
+
+  if (type === 'eat') {
+    playTone(ctx, 440, 0.08, 'sine', 0.08, now);
+    playTone(ctx, 660, 0.08, 'sine', 0.06, now + 0.04);
+  } else if (type === 'gold') {
+    playTone(ctx, 523, 0.1, 'sine', 0.1, now);
+    playTone(ctx, 784, 0.1, 'sine', 0.1, now + 0.06);
+    playTone(ctx, 1047, 0.15, 'sine', 0.1, now + 0.12);
+  } else if (type === 'powerup') {
+    for (var i = 0; i < 4; i++) {
+      playTone(ctx, 400 + i * 200, 0.1, 'triangle', 0.08, now + i * 0.05);
+    }
+  } else if (type === 'death') {
+    playTone(ctx, 300, 0.15, 'sawtooth', 0.1, now);
+    playTone(ctx, 200, 0.15, 'sawtooth', 0.1, now + 0.12);
+    playTone(ctx, 100, 0.3, 'sawtooth', 0.1, now + 0.24);
+  }
+}
+
+function playTone(ctx, freq, dur, wave, vol, startTime) {
+  var osc = ctx.createOscillator();
+  var gain = ctx.createGain();
+  osc.frequency.value = freq;
+  osc.type = wave;
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(vol, startTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + dur);
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  localStorage.setItem('soundSnake', soundOn ? 'on' : 'off');
+  updateSoundUI();
+  if (soundOn) playSound('eat');
+}
+
+function updateSoundUI() {
+  document.getElementById('soundIcon').textContent = soundOn ? '🔊' : '🔇';
+  document.getElementById('soundText').textContent = soundOn ? '音效' : '静音';
+}
+
+// ==================== D-pad ====================
+function toggleDpad() {
+  dpadVisible = !dpadVisible;
+  document.getElementById('dpad').style.display = dpadVisible ? 'grid' : 'none';
+  showToast(dpadVisible ? '已开启方向按键' : '已关闭方向按键');
+}
+
+// ==================== Toast ====================
+function showToast(msg) {
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function() { toast.classList.remove('show'); }, 2000);
+}
+
+// ==================== Touch ====================
+function setupTouch() {
+  var wrap = document.getElementById('canvasWrap');
+  var startX = 0, startY = 0;
+
+  wrap.addEventListener('touchstart', function(e) {
+    var t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+  }, { passive: true });
+
+  wrap.addEventListener('touchend', function(e) {
+    var t = e.changedTouches[0];
+    var dx = t.clientX - startX;
+    var dy = t.clientY - startY;
+    var threshold = 20;
+
+    if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDir(dx > 0 ? 'right' : 'left');
+    } else {
+      setDir(dy > 0 ? 'down' : 'up');
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+}
+
+// ==================== Keyboard ====================
+function setupKeyboard() {
+  document.addEventListener('keydown', function(e) {
+    var map = {
+      ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+      w: 'up', s: 'down', a: 'left', d: 'right',
+      W: 'up', S: 'down', A: 'left', D: 'right'
+    };
+    if (map[e.key]) {
+      e.preventDefault();
+      setDir(map[e.key]);
+    }
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (!gameRunning) startGame();
+      else pauseGame();
+    }
+  });
+}
+
+// ==================== Start ====================
+window.addEventListener('load', function() {
+  init();
+  // Register SW for offline
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw_snake.js').then(function(reg) {
+      console.log('SW registered:', reg.scope);
+    }).catch(function(err) {
+      console.log('SW failed:', err);
+    });
+  }
+  // Install prompt
+  var deferred = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferred = e;
+    setTimeout(function() {
+      if (deferred) showToast('💡 浏览器菜单可"安装应用"到桌面');
+    }, 5000);
+  });
+  window.addEventListener('appinstalled', function() {
+    showToast('🎉 安装成功！');
+    deferred = null;
+  });
+});
+</script>
+</body>
+</html>
