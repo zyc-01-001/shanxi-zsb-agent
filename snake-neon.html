@@ -1042,7 +1042,28 @@ var bgmMaster = null;
 // --- Local music player ---
 var musicAudio = null;
 var musicPlaying = false;
-var musicMode = null; // 'bgm' or 'local'
+var musicMode = null; // 'bgm' or 'local' or 'song'
+
+// --- Uploaded BGM song (小幸运) ---
+var songAudio = null;
+var songLoaded = false;
+var songPlaying = false;
+
+function initSongAudio() {
+  if (songAudio) return;
+  songAudio = new Audio('bgm.mp3');
+  songAudio.loop = true;
+  songAudio.volume = 0.5;
+  songAudio.preload = 'auto';
+  songAudio.addEventListener('canplaythrough', function() {
+    songLoaded = true;
+    console.log('BGM song loaded');
+  });
+  songAudio.addEventListener('error', function() {
+    console.log('BGM song failed to load');
+    songLoaded = false;
+  });
+}
 
 // Original chiptune melodies (royalty-free, composed for this game)
 var MELODIES = [
@@ -1179,14 +1200,61 @@ function toggleBGM() {
     musicMode = null;
   }
 
-  if (bgmEnabled) {
-    // Already playing BGM → switch to next track
-    switchBGMTrack();
-    showToast('🎵 切换至：' + MELODIES[currentMelody].name);
-  } else {
+  // Cycle: 小幸运 → 内置1 → 内置2 → 内置3 → 停止
+  if (musicMode === 'song' && songPlaying) {
+    // Currently playing song → stop song, start chiptune
+    songAudio.pause();
+    songPlaying = false;
+    stopBGM();
     startBGM();
-    showToast('🎵 播放：' + MELODIES[currentMelody].name);
+    showToast('🎵 切换至：' + MELODIES[currentMelody].name);
+  } else if (bgmEnabled) {
+    // Already playing chiptune → switch track or start song
+    var nextMelody = (currentMelody + 1) % MELODIES.length;
+    if (nextMelody === 0) {
+      // Back to start → try playing the song
+      stopBGM();
+      playSong();
+    } else {
+      switchBGMTrack();
+      showToast('🎵 切换至：' + MELODIES[currentMelody].name);
+    }
+  } else {
+    // Nothing playing → start with song first
+    playSong();
   }
+}
+
+function playSong() {
+  initSongAudio();
+  if (!songAudio) return;
+
+  var playPromise = songAudio.play();
+  if (playPromise) {
+    playPromise.then(function() {
+      songPlaying = true;
+      musicMode = 'song';
+      document.getElementById('bgmBtn').classList.add('playing');
+      document.getElementById('musicVinyl').classList.add('playing');
+      document.getElementById('playBtn').textContent = '⏸️';
+      document.getElementById('musicTitle').textContent = '🎶 小幸运';
+      document.getElementById('musicStatus').textContent = '已加载BGM · 点击🎵切换芯片音乐';
+      showToast('🎵 播放：小幸运');
+    }).catch(function(e) {
+      // Autoplay blocked → fall back to chiptune
+      console.log('Song autoplay blocked, starting chiptune instead');
+      startBGM();
+    });
+  }
+}
+
+function stopSong() {
+  if (songAudio) {
+    songAudio.pause();
+    songPlaying = false;
+  }
+  document.getElementById('bgmBtn').classList.remove('playing');
+  document.getElementById('musicVinyl').classList.remove('playing');
 }
 
 function switchBGMTrack() {
@@ -1242,8 +1310,29 @@ function loadMusic(event) {
 }
 
 function toggleMusic() {
+  // Song mode (小幸运)
+  if (musicMode === 'song') {
+    if (songPlaying) {
+      songAudio.pause();
+      songPlaying = false;
+      document.getElementById('playBtn').textContent = '▶️';
+      document.getElementById('musicVinyl').classList.remove('playing');
+      document.getElementById('musicTitle').textContent = '🎶 小幸运（暂停）';
+    } else {
+      songAudio.play().then(function() {
+        songPlaying = true;
+        document.getElementById('playBtn').textContent = '⏸️';
+        document.getElementById('musicVinyl').classList.add('playing');
+        document.getElementById('musicTitle').textContent = '🎶 小幸运';
+      }).catch(function(e) {
+        showToast('播放失败，请重试');
+      });
+    }
+    return;
+  }
+
   if (musicMode === 'bgm') {
-    // Toggle BGM
+    // Toggle chiptune BGM
     if (bgmEnabled) {
       stopBGM();
       document.getElementById('musicTitle').textContent = '音乐已暂停';
@@ -1255,6 +1344,7 @@ function toggleMusic() {
     return;
   }
 
+  // Local imported music
   if (!musicAudio || !musicAudio.src) {
     showToast('请先点击 📂 导入歌曲');
     return;
