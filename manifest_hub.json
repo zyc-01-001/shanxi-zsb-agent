@@ -1,0 +1,25 @@
+{
+  "name": "游戏中心",
+  "short_name": "游戏中心",
+  "description": "霓虹科技风游戏中心 - 贪吃蛇、2048纯休闲、2048知识版",
+  "start_url": "game-hub.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050714",
+  "theme_color": "#050714",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon-hub.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-hub.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
