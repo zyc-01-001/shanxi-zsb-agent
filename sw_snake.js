@@ -1,8 +1,9 @@
-// Service Worker for Neon Snake Game - Offline Caching
-const CACHE_NAME = 'snake-neon-v1';
+// Service Worker for Neon Snake Game - Offline Caching (v2 with bgm.mp3)
+const CACHE_NAME = 'snake-neon-v2';
 const ASSETS = [
   './snake-neon.html',
-  './icon-snake.jpg'
+  './icon-snake.jpg',
+  './bgm.mp3'
 ];
 
 self.addEventListener('install', function(event) {
