@@ -179,6 +179,54 @@ canvas{display:block;width:100%;height:100%;}
 .dpad-up{grid-area:up;}.dpad-down{grid-area:down;}
 .dpad-left{grid-area:left;}.dpad-right{grid-area:right;}
 
+/* Music player */
+.music-bar{
+  width:100%;display:flex;align-items:center;gap:8px;
+  padding:8px 12px;margin-top:4px;
+  background:rgba(0,240,255,0.04);border:1px solid rgba(0,240,255,0.12);
+  border-radius:12px;
+}
+.music-btn{
+  width:36px;height:36px;border-radius:50%;border:none;
+  background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.2);
+  color:var(--cyan);font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all 0.15s;
+}
+.music-btn:active{transform:scale(0.9);}
+.music-btn.playing{background:rgba(0,240,255,0.2);box-shadow:0 0 12px rgba(0,240,255,0.3);}
+.music-info{
+  flex:1;min-width:0;overflow:hidden;
+}
+.music-title{
+  font-size:12px;font-weight:600;color:var(--cyan);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.music-status{
+  font-size:10px;color:var(--dim);margin-top:1px;
+}
+.music-select-btn{
+  font-size:18px;cursor:pointer;color:var(--cyan);
+  flex-shrink:0;padding:4px;
+  background:none;border:none;
+}
+.music-vinyl{
+  width:28px;height:28px;border-radius:50%;
+  background:conic-gradient(from 0deg,#333,#111,#333,#111,#333);
+  border:2px solid rgba(0,240,255,0.3);
+  flex-shrink:0;
+  animation:spin 3s linear infinite;
+  animation-play-state:paused;
+}
+.music-vinyl.playing{animation-play-state:running;}
+.music-vinyl::after{
+  content:'';display:block;width:8px;height:8px;
+  background:var(--cyan);border-radius:50%;
+  margin:7px auto;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+#musicFile{display:none;}
+
 @media(max-height:740px){
   .title{font-size:19px;}
   .header{padding:6px 0 4px;}
@@ -246,6 +294,19 @@ canvas{display:block;width:100%;height:100%;}
   <div class="hint">
     上下左右滑动控制 · 吃<b style="color:#00ff88">绿色食物</b>+1 · 吃<b style="color:#ffd700">金色食物</b>+5<br>
     吃<b style="color:#ff00aa">粉色道具</b>触发特效 · 连续吃食物有连击加成
+  </div>
+
+  <!-- Music Player -->
+  <div class="music-bar">
+    <div class="music-vinyl" id="musicVinyl"></div>
+    <button class="music-btn" id="bgmBtn" onclick="toggleBGM()" title="内置音乐">🎵</button>
+    <button class="music-btn" id="playBtn" onclick="toggleMusic()" title="播放/暂停">▶️</button>
+    <div class="music-info">
+      <div class="music-title" id="musicTitle">未选择音乐</div>
+      <div class="music-status" id="musicStatus">点击 📂 导入手机歌曲</div>
+    </div>
+    <button class="music-select-btn" onclick="document.getElementById('musicFile').click()" title="导入本地音乐">📂</button>
+    <input type="file" id="musicFile" accept="audio/*" onchange="loadMusic(event)">
   </div>
 </div>
 
@@ -967,6 +1028,253 @@ function toggleDpad() {
   dpadVisible = !dpadVisible;
   document.getElementById('dpad').style.display = dpadVisible ? 'grid' : 'none';
   showToast(dpadVisible ? '已开启方向按键' : '已关闭方向按键');
+}
+
+// ==================== Music System ====================
+// --- Built-in BGM (chiptune, royalty-free, generated via Web Audio API) ---
+var bgmEnabled = false;
+var bgmInterval = null;
+var bgmStep = 0;
+var bgmCtx = null;
+var bgmGain = null;
+var bgmMaster = null;
+
+// --- Local music player ---
+var musicAudio = null;
+var musicPlaying = false;
+var musicMode = null; // 'bgm' or 'local'
+
+// Original chiptune melodies (royalty-free, composed for this game)
+var MELODIES = [
+  {
+    name: '霓虹律动',
+    bpm: 120,
+    notes: [
+      // Main melody - cheerful upbeat chiptune
+      [523,1],[659,1],[784,1],[1047,2],[784,1],[659,1],
+      [523,1],[659,1],[784,1],[659,2],[523,2],
+      [587,1],[698,1],[880,1],[1175,2],[880,1],[698,1],
+      [587,1],[698,1],[880,1],[698,2],[587,2],
+      [523,1],[659,1],[784,1],[1047,1],[1175,1],[1047,1],
+      [784,1],[659,1],[523,1],[659,2],[523,2]
+    ]
+  },
+  {
+    name: '星空漫步',
+    bpm: 100,
+    notes: [
+      // Dreamy slower melody
+      [392,2],[523,2],[659,2],[784,4],
+      [659,2],[523,2],[392,2],[440,4],
+      [466,2],[587,2],[698,2],[880,4],
+      [698,2],[587,2],[466,2],[392,4],
+      [349,2],[440,2],[523,2],[698,4],
+      [622,2],[523,2],[440,2],[349,4]
+    ]
+  },
+  {
+    name: '像素冒险',
+    bpm: 140,
+    notes: [
+      // Fast adventurous melody
+      [659,0.5],[784,0.5],[1047,1],[784,0.5],[659,0.5],
+      [523,1],[659,0.5],[784,0.5],[1047,2],
+      [880,0.5],[988,0.5],[1175,1],[988,0.5],[880,0.5],
+      [784,1],[880,0.5],[988,0.5],[1175,2],
+      [659,0.5],[784,0.5],[1047,1],[1319,1],[1175,0.5],[1047,0.5],
+      [880,1],[784,0.5],[659,0.5],[523,2],
+      [587,0.5],[698,0.5],[880,1],[1175,1],[1047,0.5],[880,0.5],
+      [784,1],[659,0.5],[587,0.5],[523,2]
+    ]
+  }
+];
+var currentMelody = 0;
+
+function initBGM() {
+  if (bgmCtx) return;
+  try {
+    bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
+    bgmMaster = bgmCtx.createGain();
+    bgmMaster.gain.value = 0.12;
+    bgmMaster.connect(bgmCtx.destination);
+  } catch(e) { bgmCtx = null; }
+}
+
+function playBGMNote(freq, duration, startTime) {
+  if (!bgmCtx) return;
+  var osc = bgmCtx.createOscillator();
+  var gain = bgmCtx.createGain();
+  osc.frequency.value = freq;
+  osc.type = 'triangle';
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(0.15, startTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.9);
+  osc.connect(gain);
+  gain.connect(bgmMaster);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+
+  // Bass note (one octave lower, square wave)
+  var bass = bgmCtx.createOscillator();
+  var bassGain = bgmCtx.createGain();
+  bass.frequency.value = freq / 2;
+  bass.type = 'square';
+  bassGain.gain.setValueAtTime(0, startTime);
+  bassGain.gain.linearRampToValueAtTime(0.06, startTime + 0.02);
+  bassGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.8);
+  bass.connect(bassGain);
+  bassGain.connect(bgmMaster);
+  bass.start(startTime);
+  bass.stop(startTime + duration);
+}
+
+function startBGM() {
+  initBGM();
+  if (!bgmCtx) return;
+  if (bgmCtx.state === 'suspended') bgmCtx.resume();
+
+  bgmEnabled = true;
+  bgmStep = 0;
+  var melody = MELODIES[currentMelody];
+  var beatDuration = 60 / melody.bpm / 2; // each beat = half note
+
+  function playNext() {
+    if (!bgmEnabled) return;
+    var melody = MELODIES[currentMelody];
+    var note = melody.notes[bgmStep % melody.notes.length];
+    var freq = note[0];
+    var beats = note[1];
+    var duration = beats * beatDuration * 2;
+    var now = bgmCtx.currentTime;
+
+    playBGMNote(freq, duration, now);
+
+    bgmStep++;
+    bgmInterval = setTimeout(playNext, duration * 1000);
+  }
+
+  playNext();
+  musicMode = 'bgm';
+  document.getElementById('bgmBtn').classList.add('playing');
+  document.getElementById('musicVinyl').classList.add('playing');
+  document.getElementById('musicTitle').textContent = '🎵 ' + melody.name;
+  document.getElementById('musicStatus').textContent = '内置芯片音乐 · 点击🎵切换曲目';
+}
+
+function stopBGM() {
+  bgmEnabled = false;
+  if (bgmInterval) { clearTimeout(bgmInterval); bgmInterval = null; }
+  document.getElementById('bgmBtn').classList.remove('playing');
+  if (musicMode !== 'local') {
+    document.getElementById('musicVinyl').classList.remove('playing');
+  }
+}
+
+function toggleBGM() {
+  // Stop local music if playing
+  if (musicAudio && musicPlaying) {
+    musicAudio.pause();
+    musicPlaying = false;
+    document.getElementById('playBtn').textContent = '▶️';
+    musicMode = null;
+  }
+
+  if (bgmEnabled) {
+    // Already playing BGM → switch to next track
+    switchBGMTrack();
+    showToast('🎵 切换至：' + MELODIES[currentMelody].name);
+  } else {
+    startBGM();
+    showToast('🎵 播放：' + MELODIES[currentMelody].name);
+  }
+}
+
+function switchBGMTrack() {
+  currentMelody = (currentMelody + 1) % MELODIES.length;
+  stopBGM();
+  setTimeout(startBGM, 100);
+}
+
+// --- Local Music Player ---
+function loadMusic(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+
+  // Stop BGM if playing
+  stopBGM();
+
+  // Create or reuse audio element
+  if (!musicAudio) {
+    musicAudio = new Audio();
+    musicAudio.loop = true;
+    musicAudio.addEventListener('ended', function() {
+      musicPlaying = false;
+      document.getElementById('playBtn').textContent = '▶️';
+      document.getElementById('musicVinyl').classList.remove('playing');
+    });
+    musicAudio.addEventListener('error', function() {
+      showToast('音乐加载失败，请试试其他格式的文件');
+      document.getElementById('musicStatus').textContent = '加载失败';
+    });
+  }
+
+  var url = URL.createObjectURL(file);
+  musicAudio.src = url;
+
+  // Extract display name
+  var name = file.name.replace(/\.[^/.]+$/, '');
+  if (name.length > 20) name = name.substring(0, 18) + '...';
+
+  document.getElementById('musicTitle').textContent = '🎶 ' + name;
+  document.getElementById('musicStatus').textContent = file.name.split('.').pop().toUpperCase() + ' · 已导入';
+
+  // Auto play
+  musicAudio.play().then(function() {
+    musicPlaying = true;
+    musicMode = 'local';
+    document.getElementById('playBtn').textContent = '⏸️';
+    document.getElementById('musicVinyl').classList.add('playing');
+    showToast('🎵 ' + name + ' 开始播放');
+  }).catch(function(e) {
+    document.getElementById('musicStatus').textContent = '点击▶️播放';
+    showToast('需要点击播放按钮才能播放');
+  });
+}
+
+function toggleMusic() {
+  if (musicMode === 'bgm') {
+    // Toggle BGM
+    if (bgmEnabled) {
+      stopBGM();
+      document.getElementById('musicTitle').textContent = '音乐已暂停';
+      document.getElementById('playBtn').textContent = '▶️';
+    } else {
+      startBGM();
+      document.getElementById('playBtn').textContent = '⏸️';
+    }
+    return;
+  }
+
+  if (!musicAudio || !musicAudio.src) {
+    showToast('请先点击 📂 导入歌曲');
+    return;
+  }
+
+  if (musicPlaying) {
+    musicAudio.pause();
+    musicPlaying = false;
+    document.getElementById('playBtn').textContent = '▶️';
+    document.getElementById('musicVinyl').classList.remove('playing');
+  } else {
+    musicAudio.play().then(function() {
+      musicPlaying = true;
+      musicMode = 'local';
+      document.getElementById('playBtn').textContent = '⏸️';
+      document.getElementById('musicVinyl').classList.add('playing');
+    }).catch(function(e) {
+      showToast('播放失败，请重新导入歌曲');
+    });
+  }
 }
 
 // ==================== Toast ====================
