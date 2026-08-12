@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="2048知识">
+<meta name="theme-color" content="#0a0e27">
+<meta name="description" content="2048知识合成 - 休闲数字合并游戏，合成数字解锁专升本知识点">
+<title>2048 · 知识合成</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg-dark:#0a0e27;
+  --bg-mid:#131a3a;
+  --cyan:#00f0ff;
+  --cyan-dim:#0088aa;
+  --gold:#ffd700;
+  --text:#e0e8ff;
+  --text-dim:#667799;
+  --radius:12px;
+}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:radial-gradient(ellipse at top,#131a3a 0%,#0a0e27 50%,#050714 100%);
+  font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  color:var(--text);
+  user-select:none;-webkit-user-select:none;
+  touch-action:none;
+}
+#app{
+  display:flex;flex-direction:column;align-items:center;
+  width:100%;max-width:480px;margin:0 auto;
+  padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+  min-height:100vh;min-height:100dvh;
+}
+
+/* ===== Header ===== */
+.header{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  padding:12px 0 6px;
+}
+.title{
+  font-size:26px;font-weight:800;
+  background:linear-gradient(135deg,#00f0ff,#5fafff,#00f0ff);
+  background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:shine 3s linear infinite;
+}
+@keyframes shine{to{background-position:200% center;}}
+.subtitle{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+/* ===== Scores ===== */
+.scores{display:flex;gap:8px;}
+.score-box{
+  background:rgba(0,240,255,0.05);
+  border:1px solid rgba(0,240,255,0.15);
+  border-radius:var(--radius);
+  padding:6px 14px;text-align:center;min-width:70px;
+  backdrop-filter:blur(4px);
+}
+.score-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+.score-value{font-size:20px;font-weight:700;color:var(--cyan);text-shadow:0 0 10px rgba(0,240,255,0.4);}
+
+/* ===== Stats ===== */
+.stats{display:flex;gap:10px;font-size:11px;color:var(--text-dim);padding:6px 0;}
+.stat-item{display:flex;align-items:center;gap:3px;}
+.stat-item b{color:var(--cyan);font-weight:600;}
+
+/* ===== Toolbar ===== */
+.toolbar{width:100%;display:flex;gap:8px;padding:4px 0 8px;}
+.btn{
+  flex:1;padding:10px 4px;border:none;border-radius:var(--radius);
+  font-size:12px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  transition:all 0.15s;
+  background:linear-gradient(135deg,rgba(0,240,255,0.12),rgba(0,240,255,0.04));
+  border:1px solid rgba(0,240,255,0.25);
+  color:var(--cyan);
+}
+.btn:active{transform:scale(0.94);background:rgba(0,240,255,0.2);}
+.btn-icon{font-size:15px;}
+
+/* ===== Board ===== */
+.board-wrap{
+  position:relative;width:100%;
+  aspect-ratio:1;max-width:420px;
+  margin:4px 0;
+}
+.board-bg{
+  position:absolute;inset:0;
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;
+  padding:12px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:repeat(4,1fr);
+  gap:12px;
+}
+.cell{background:rgba(255,255,255,0.025);border-radius:10px;}
+.tile-container{position:absolute;inset:0;padding:12px;pointer-events:none;}
+.tile{
+  position:absolute;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;
+  transition:transform 0.12s ease-out;
+  will-change:transform;
+}
+/* Tile colors - blue/cyan neon progression */
+.tile[data-val="2"]{background:linear-gradient(135deg,#1a2a4e,#162240);color:#7a9bcf;box-shadow:0 2px 8px rgba(26,42,78,0.4);}
+.tile[data-val="4"]{background:linear-gradient(135deg,#1e3a6e,#1a2e58);color:#8ab5e0;box-shadow:0 2px 10px rgba(30,58,110,0.4);}
+.tile[data-val="8"]{background:linear-gradient(135deg,#2255a0,#1a4080);color:#a0c8ff;box-shadow:0 2px 12px rgba(34,85,160,0.5);}
+.tile[data-val="16"]{background:linear-gradient(135deg,#0066cc,#0050b0);color:#b0d8ff;box-shadow:0 2px 14px rgba(0,102,204,0.5);}
+.tile[data-val="32"]{background:linear-gradient(135deg,#0088dd,#0070bb);color:#c0e8ff;box-shadow:0 2px 16px rgba(0,136,221,0.5);}
+.tile[data-val="64"]{background:linear-gradient(135deg,#00aaff,#0090ee);color:#e0f4ff;box-shadow:0 2px 18px rgba(0,170,255,0.6);}
+.tile[data-val="128"]{background:linear-gradient(135deg,#00d4ff,#00b8e6);color:#f0fbff;box-shadow:0 0 20px rgba(0,212,255,0.5),0 2px 20px rgba(0,212,255,0.4);}
+.tile[data-val="256"]{background:linear-gradient(135deg,#00f0ff,#00d4e0);color:#fff;box-shadow:0 0 24px rgba(0,240,255,0.6),0 2px 24px rgba(0,240,255,0.5);}
+.tile[data-val="512"]{background:linear-gradient(135deg,#5ffbf0,#00e0d0);color:#fff;box-shadow:0 0 28px rgba(95,251,240,0.7),0 2px 28px rgba(95,251,240,0.5);}
+.tile[data-val="1024"]{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#1a1a00;box-shadow:0 0 30px rgba(255,215,0,0.7),0 2px 30px rgba(255,170,0,0.6);}
+.tile[data-val="2048"]{background:linear-gradient(135deg,#ff00ff,#aa00ff);color:#fff;box-shadow:0 0 40px rgba(255,0,255,0.8),0 0 60px rgba(170,0,255,0.5);animation:pulse2048 2s ease-in-out infinite;}
+.tile[data-val="4096"]{background:linear-gradient(135deg,#ff0088,#ff0044);color:#fff;box-shadow:0 0 40px rgba(255,0,136,0.8);}
+.tile[data-val="8192"]{background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff;box-shadow:0 0 50px rgba(255,68,68,0.9);}
+@keyframes pulse2048{0%,100%{box-shadow:0 0 40px rgba(255,0,255,0.8),0 0 60px rgba(170,0,255,0.5);}50%{box-shadow:0 0 60px rgba(255,0,255,1),0 0 100px rgba(170,0,255,0.8);}}
+
+/* Tile animations */
+.tile.new{animation:spawn 0.2s ease-out;}
+@keyframes spawn{0%{transform:scale(0) rotate(180deg);}100%{transform:scale(1) rotate(0);}}
+.tile.merged{animation:merge 0.25s ease-out;}
+@keyframes merge{0%{transform:scale(1);}50%{transform:scale(1.25);}100%{transform:scale(1);}}
+
+/* Score popup */
+.score-popup{
+  position:absolute;
+  color:var(--cyan);font-weight:800;font-size:22px;
+  text-shadow:0 0 12px rgba(0,240,255,0.8);
+  pointer-events:none;z-index:50;
+  animation:floatUp 0.8s ease-out forwards;
+}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-50px);}}
+
+/* ===== Overlays ===== */
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(5,7,20,0.85);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;
+  z-index:100;opacity:0;pointer-events:none;
+  transition:opacity 0.3s;
+}
+.overlay.show{opacity:1;pointer-events:auto;}
+.overlay-content{
+  background:linear-gradient(135deg,rgba(19,26,58,0.95),rgba(10,14,39,0.95));
+  border:1px solid rgba(0,240,255,0.2);
+  border-radius:20px;
+  padding:28px 24px;
+  max-width:360px;width:calc(100% - 48px);
+  text-align:center;
+  box-shadow:0 0 40px rgba(0,240,255,0.15);
+  transform:scale(0.9);transition:transform 0.3s;
+}
+.overlay.show .overlay-content{transform:scale(1);}
+.overlay-title{
+  font-size:22px;font-weight:800;margin-bottom:10px;
+  background:linear-gradient(135deg,#00f0ff,#5fafff);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.overlay-text{font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:16px;}
+.overlay-score{font-size:36px;font-weight:800;color:var(--cyan);text-shadow:0 0 20px rgba(0,240,255,0.5);margin:8px 0 16px;}
+.overlay-btns{display:flex;gap:8px;}
+
+/* ===== Knowledge Popup ===== */
+.kp{
+  position:fixed;bottom:0;left:0;right:0;
+  background:linear-gradient(180deg,rgba(19,26,58,0.98),rgba(10,14,39,0.98));
+  border-top:2px solid var(--cyan);
+  border-radius:20px 20px 0 0;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+  transform:translateY(100%);
+  transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  z-index:200;
+  box-shadow:0 -10px 40px rgba(0,240,255,0.2);
+  max-width:480px;margin:0 auto;
+}
+.kp.show{transform:translateY(0);}
+.kp-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.kp-badge{
+  background:linear-gradient(135deg,#00f0ff,#00aaff);
+  color:#000;font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:20px;
+  white-space:nowrap;
+}
+.kp-title{font-size:16px;font-weight:700;color:var(--cyan);}
+.kp-body{font-size:13px;color:var(--text);line-height:1.8;max-height:300px;overflow-y:auto;}
+.kp-body b{color:var(--cyan);}
+.kp-body .formula{
+  display:block;background:rgba(0,240,255,0.05);
+  border:1px solid rgba(0,240,255,0.1);
+  border-radius:8px;padding:8px 12px;margin:6px 0;
+  font-family:'Courier New',monospace;font-size:14px;
+}
+.kp-close{
+  margin-top:16px;width:100%;padding:12px;
+  background:linear-gradient(135deg,rgba(0,240,255,0.15),rgba(0,240,255,0.05));
+  border:1px solid rgba(0,240,255,0.3);
+  border-radius:12px;color:var(--cyan);
+  font-size:14px;font-weight:600;cursor:pointer;
+}
+
+/* ===== Gallery ===== */
+.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;}
+.gallery-item{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;padding:14px 10px;text-align:center;
+  transition:all 0.2s;
+}
+.gallery-item.unlocked{border-color:rgba(0,240,255,0.3);background:rgba(0,240,255,0.05);cursor:pointer;}
+.gallery-item.unlocked:active{transform:scale(0.96);}
+.gallery-item.locked{opacity:0.4;}
+.gi-val{font-size:22px;font-weight:800;color:var(--cyan);}
+.gallery-item.locked .gi-val{color:var(--text-dim);}
+.gi-subject{font-size:10px;color:var(--gold);margin-top:4px;}
+.gi-title{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+/* ===== Toast ===== */
+.toast{
+  position:fixed;top:60px;left:50%;
+  transform:translateX(-50%) translateY(-20px);
+  background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.3);
+  border-radius:20px;padding:8px 20px;font-size:13px;color:var(--cyan);
+  opacity:0;pointer-events:none;transition:all 0.3s;z-index:300;
+  white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ===== Hint ===== */
+.hint{text-align:center;font-size:11px;color:var(--text-dim);padding:8px 0 16px;}
+.hint b{color:var(--cyan-dim);}
+
+/* ===== Responsive ===== */
+@media(max-height:700px){
+  .title{font-size:22px;}
+  .header{padding:8px 0 4px;}
+  .board-wrap{margin:2px 0;}
+  .toolbar{padding:2px 0 4px;}
+  .btn{padding:8px 4px;}
+}
+@media(max-width:360px){
+  .score-box{min-width:60px;padding:5px 10px;}
+  .score-value{font-size:18px;}
+  .btn{font-size:11px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="title">2048 · 知识合成</div>
+      <div class="subtitle">合并数字，解锁知识</div>
+    </div>
+    <div class="scores">
+      <div class="score-box">
+        <div class="score-label">分数</div>
+        <div class="score-value" id="score">0</div>
+      </div>
+      <div class="score-box">
+        <div class="score-label">最佳</div>
+        <div class="score-value" id="best">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-item">步数 <b id="moves">0</b></div>
+    <div class="stat-item">|</div>
+    <div class="stat-item">最高 <b id="maxTile">2</b></div>
+    <div class="stat-item">|</div>
+    <div class="stat-item">解锁 <b id="unlocked">0</b>/5</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn" onclick="newGame()"><span class="btn-icon">🔄</span>新局</button>
+    <button class="btn" onclick="undo()"><span class="btn-icon">↩️</span>撤销</button>
+    <button class="btn" onclick="toggleSound()"><span class="btn-icon" id="soundIcon">🔊</span><span id="soundText">音效</span></button>
+    <button class="btn" onclick="showGallery()"><span class="btn-icon">📚</span>图鉴</button>
+  </div>
+
+  <div class="board-wrap" id="boardWrap">
+    <div class="board-bg" id="boardBg"></div>
+    <div class="tile-container" id="tileContainer"></div>
+  </div>
+
+  <div class="hint">上下左右滑动合并 · 合成 <b>2048</b> 通关 · 大数字解锁知识</div>
+</div>
+
+<!-- Knowledge popup (bottom sheet) -->
+<div class="kp" id="knowledgePopup">
+  <div class="kp-header">
+    <span class="kp-badge" id="kpBadge">解锁</span>
+    <span class="kp-title" id="kpTitle"></span>
+  </div>
+  <div class="kp-body" id="kpBody"></div>
+  <button class="kp-close" onclick="closeKnowledge()">继续游戏</button>
+</div>
+
+<!-- Game over / win overlay -->
+<div class="overlay" id="overlay">
+  <div class="overlay-content">
+    <div class="overlay-title" id="overlayTitle">游戏结束</div>
+    <div class="overlay-text" id="overlayText">没有可以移动的步数了</div>
+    <div class="overlay-score" id="overlayScore">0</div>
+    <div class="overlay-btns">
+      <button class="btn" onclick="newGame();hideOverlay();">再来一局</button>
+      <button class="btn" onclick="hideOverlay()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Knowledge gallery overlay -->
+<div class="overlay" id="galleryOverlay">
+  <div class="overlay-content" style="max-height:80vh;overflow-y:auto;">
+    <div class="overlay-title">📚 知识图鉴</div>
+    <div class="overlay-text">合成到对应数字即可解锁知识点</div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+    <button class="btn" onclick="hideGallery()" style="margin-top:16px;">关闭</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== Knowledge Data ====================
+const KNOWLEDGE_TIPS = [
+  {
+    threshold: 128,
+    subject: '高等数学',
+    title: '两个重要极限',
+    content: '<b>第一重要极限：</b><div class="formula">lim(x→0) sin(x)/x = 1</div><b>第二重要极限：</b><div class="formula">lim(x→∞) (1 + 1/x)^x = e</div>变形形式：lim(x→0) (1 + x)^(1/x) = e<br><br>记住：sinx/x 趋于1，(1+1/x)^x 趋于 e'
+  },
+  {
+    threshold: 256,
+    subject: 'C语言',
+    title: '指针核心：& 和 *',
+    content: '<b>& 取地址，* 取内容</b><div class="formula">int a = 10;<br>int *p = &a;  // p 存放 a 的地址<br>*p = 20;       // 通过指针修改 a = 20</div>指针与数组：<br>p = a; // a 是数组名，代表首地址<br>*(p+i) 等价于 a[i]<br><br>口诀：& 找门牌号，* 敲门取东西'
+  },
+  {
+    threshold: 512,
+    subject: '公共英语',
+    title: '八大时态速记',
+    content: '<b>一般现在时：</b>do / does<br><b>一般过去时：</b>did<br><b>一般将来时：</b>will do<br><b>现在进行时：</b>is/am/are + doing<br><b>过去进行时：</b>was/were + doing<br><b>现在完成时：</b>have/has + done<br><b>过去完成时：</b>had + done<br><b>过去将来时：</b>would + do<br><br>关键：看时间状语定时态<br>every day → 一般现在<br>yesterday → 一般过去<br>since + 时间 → 现在完成'
+  },
+  {
+    threshold: 1024,
+    subject: '计算机基础',
+    title: '进制转换口诀',
+    content: '<b>二转十：按权展开</b><div class="formula">1011 = 1×2³ + 0×2² + 1×2¹ + 1×2⁰ = 11</div><b>十转二：除2取余，逆序排列</b><div class="formula">11 ÷ 2 = 5 余 1<br>5 ÷ 2 = 2 余 1<br>2 ÷ 2 = 1 余 0<br>1 ÷ 2 = 0 余 1<br>逆序读：1011</div><b>二转十六：</b>4位一组，不足补零<br>1011 → B<br>11110000 → F0'
+  },
+  {
+    threshold: 2048,
+    subject: '通关成就',
+    title: '恭喜合成2048！',
+    content: '<b>你成功合成了 2048！</b><br><br>2048 = 2¹¹，是第12个2的幂。<br><br>这证明了你的策略思维和耐心！<br><br>继续挑战更高数字：<br>4096、8192 等你来解锁<br><br>💡 小技巧：把最大的数字固定在角落，从同方向逐步合并'
+  }
+];
+
+// ==================== Game State ====================
+let gameBoard = [];
+let score = 0;
+let best = 0;
+let moves = 0;
+let maxTile = 2;
+let soundOn = true;
+let prevState = null;
+let unlockedTips = [];
+let gameWon = false;
+
+// ==================== Init ====================
+function init() {
+  best = parseInt(localStorage.getItem('best2048') || '0');
+  soundOn = localStorage.getItem('sound2048') !== 'off';
+  unlockedTips = JSON.parse(localStorage.getItem('unlocked2048') || '[]');
+
+  const bg = document.getElementById('boardBg');
+  bg.innerHTML = '';
+  for (let i = 0; i < 16; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    bg.appendChild(cell);
+  }
+
+  updateSoundUI();
+  newGame();
+  setupTouch();
+  setupKeyboard();
+  document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+}
+
+function newGame() {
+  gameBoard = [];
+  for (let r = 0; r < 4; r++) {
+    gameBoard.push([0, 0, 0, 0]);
+  }
+  score = 0;
+  moves = 0;
+  maxTile = 2;
+  gameWon = false;
+  prevState = null;
+
+  spawnTile();
+  spawnTile();
+
+  renderBoard();
+  updateUI();
+  hideOverlay();
+  closeKnowledge();
+}
+
+// ==================== Tile Spawn ====================
+function spawnTile() {
+  const empty = [];
+  for (let r = 0; r < 4; r++)
+    for (let c = 0; c < 4; c++)
+      if (gameBoard[r][c] === 0) empty.push([r, c]);
+
+  if (empty.length === 0) return false;
+
+  const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+  gameBoard[r][c] = Math.random() < 0.9 ? 2 : 4;
+  return true;
+}
+
+// ==================== Move Logic ====================
+function move(direction) {
+  if (!prevState) {
+    prevState = {
+      board: gameBoard.map(function(row) { return row.slice(); }),
+      score: score,
+      moves: moves
+    };
+  } else {
+    prevState = {
+      board: gameBoard.map(function(row) { return row.slice(); }),
+      score: score,
+      moves: moves
+    };
+  }
+
+  let moved = false;
+  let mergeScore = 0;
+  const mergedCells = [];
+
+  const dirs = {
+    left:  [0, -1],
+    right: [0,  1],
+    up:    [-1, 0],
+    down:  [ 1, 0]
+  };
+  const dr = dirs[direction][0];
+  const dc = dirs[direction][1];
+
+  const rowOrder = direction === 'down' ? [3, 2, 1, 0] : [0, 1, 2, 3];
+  const colOrder = direction === 'right' ? [3, 2, 1, 0] : [0, 1, 2, 3];
+
+  const merged = [];
+  for (let i = 0; i < 4; i++) merged.push([false, false, false, false]);
+
+  for (let ri = 0; ri < 4; ri++) {
+    const r = rowOrder[ri];
+    for (let ci = 0; ci < 4; ci++) {
+      const c = colOrder[ci];
+      if (gameBoard[r][c] === 0) continue;
+
+      let cr = r, cc = c;
+
+      while (true) {
+        const nr = cr + dr;
+        const nc = cc + dc;
+
+        if (nr < 0 || nr >= 4 || nc < 0 || nc >= 4) break;
+
+        if (gameBoard[nr][nc] === 0) {
+          gameBoard[nr][nc] = gameBoard[cr][cc];
+          gameBoard[cr][cc] = 0;
+          cr = nr; cc = nc;
+          moved = true;
+        } else if (gameBoard[nr][nc] === gameBoard[cr][cc] && !merged[nr][nc] && !merged[cr][cc]) {
+          gameBoard[nr][nc] *= 2;
+          gameBoard[cr][cc] = 0;
+          merged[nr][nc] = true;
+          mergeScore += gameBoard[nr][nc];
+          mergedCells.push([nr, nc]);
+          if (gameBoard[nr][nc] > maxTile) maxTile = gameBoard[nr][nc];
+          moved = true;
+
+          checkKnowledgeUnlock(gameBoard[nr][nc]);
+
+          if (gameBoard[nr][nc] === 2048 && !gameWon) {
+            gameWon = true;
+          }
+          break;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  if (moved) {
+    score += mergeScore;
+    moves++;
+    if (score > best) {
+      best = score;
+      localStorage.setItem('best2048', best.toString());
+    }
+
+    spawnTile();
+    renderBoard(mergedCells);
+    updateUI();
+
+    if (mergeScore > 0) {
+      showScorePopup(mergeScore);
+      playSound('merge');
+      if (navigator.vibrate) navigator.vibrate(30);
+    } else {
+      playSound('slide');
+    }
+
+    if (isGameOver()) {
+      setTimeout(showGameOver, 300);
+    } else if (gameWon === true) {
+      setTimeout(showWin, 500);
+      gameWon = 'shown';
+    }
+  }
+
+  return moved;
+}
+
+// ==================== Game Over Check ====================
+function isGameOver() {
+  for (let r = 0; r < 4; r++)
+    for (let c = 0; c < 4; c++)
+      if (gameBoard[r][c] === 0) return false;
+
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const v = gameBoard[r][c];
+      if (c < 3 && gameBoard[r][c + 1] === v) return false;
+      if (r < 3 && gameBoard[r + 1][c] === v) return false;
+    }
+  }
+  return true;
+}
+
+// ==================== Render ====================
+function renderBoard(mergedCells) {
+  mergedCells = mergedCells || [];
+  const container = document.getElementById('tileContainer');
+  container.innerHTML = '';
+
+  const wrap = document.getElementById('boardWrap');
+  const wrapW = wrap.clientWidth;
+  const padding = 12;
+  const gap = 12;
+  const cellSize = (wrapW - padding * 2 - gap * 3) / 4;
+
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if (gameBoard[r][c] === 0) continue;
+
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.val = gameBoard[r][c];
+      tile.textContent = gameBoard[r][c];
+
+      const x = padding + c * (cellSize + gap);
+      const y = padding + r * (cellSize + gap);
+
+      tile.style.width = cellSize + 'px';
+      tile.style.height = cellSize + 'px';
+      tile.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+
+      const digits = String(gameBoard[r][c]).length;
+      let fontSize;
+      if (digits <= 2) fontSize = cellSize * 0.42;
+      else if (digits === 3) fontSize = cellSize * 0.35;
+      else if (digits === 4) fontSize = cellSize * 0.28;
+      else fontSize = cellSize * 0.22;
+      tile.style.fontSize = fontSize + 'px';
+
+      if (mergedCells.some(function(m) { return m[0] === r && m[1] === c; })) {
+        tile.classList.add('merged');
+      }
+
+      container.appendChild(tile);
+    }
+  }
+}
+
+function updateUI() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('best').textContent = best;
+  document.getElementById('moves').textContent = moves;
+  document.getElementById('maxTile').textContent = maxTile;
+  document.getElementById('unlocked').textContent = unlockedTips.length;
+}
+
+// ==================== Undo ====================
+function undo() {
+  if (!prevState) {
+    showToast('没有可撤销的步骤');
+    return;
+  }
+  gameBoard = prevState.board;
+  score = prevState.score;
+  moves = prevState.moves;
+  prevState = null;
+  renderBoard();
+  updateUI();
+  showToast('已撤销一步');
+  playSound('slide');
+}
+
+// ==================== Game Over / Win ====================
+function showGameOver() {
+  document.getElementById('overlayTitle').textContent = '游戏结束';
+  document.getElementById('overlayText').textContent = '最高数字 ' + maxTile + ' · 步数 ' + moves;
+  document.getElementById('overlayScore').textContent = score;
+  document.getElementById('overlay').classList.add('show');
+  playSound('gameover');
+}
+
+function showWin() {
+  document.getElementById('overlayTitle').textContent = '🎉 通关！';
+  document.getElementById('overlayText').textContent = '你成功合成了 2048！';
+  document.getElementById('overlayScore').textContent = score;
+  document.getElementById('overlay').classList.add('show');
+  playSound('win');
+}
+
+function hideOverlay() {
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ==================== Knowledge Unlock ====================
+function checkKnowledgeUnlock(val) {
+  for (let i = 0; i < KNOWLEDGE_TIPS.length; i++) {
+    const tip = KNOWLEDGE_TIPS[i];
+    if (tip.threshold === val && unlockedTips.indexOf(val) === -1) {
+      unlockedTips.push(val);
+      localStorage.setItem('unlocked2048', JSON.stringify(unlockedTips));
+      setTimeout(function() {
+        showKnowledge(tip);
+        playSound('unlock');
+      }, 400);
+      break;
+    }
+  }
+}
+
+function showKnowledge(tip) {
+  document.getElementById('kpBadge').textContent = tip.subject;
+  document.getElementById('kpTitle').textContent = tip.title;
+  document.getElementById('kpBody').innerHTML = tip.content;
+  document.getElementById('knowledgePopup').classList.add('show');
+}
+
+function closeKnowledge() {
+  document.getElementById('knowledgePopup').classList.remove('show');
+}
+
+// ==================== Gallery ====================
+function showGallery() {
+  const grid = document.getElementById('galleryGrid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < KNOWLEDGE_TIPS.length; i++) {
+    const tip = KNOWLEDGE_TIPS[i];
+    const unlocked = unlockedTips.indexOf(tip.threshold) !== -1;
+    const item = document.createElement('div');
+    item.className = 'gallery-item ' + (unlocked ? 'unlocked' : 'locked');
+
+    let html = '';
+    if (unlocked) {
+      html = '<div class="gi-val">' + tip.threshold + '</div>';
+      html += '<div class="gi-subject">' + tip.subject + '</div>';
+      html += '<div class="gi-title">' + tip.title + '</div>';
+      item.onclick = function() {
+        showKnowledge(tip);
+        hideGallery();
+      };
+    } else {
+      html = '<div class="gi-val">🔒</div>';
+      html += '<div class="gi-subject">合成 ' + tip.threshold + '</div>';
+      html += '<div class="gi-title">解锁知识点</div>';
+    }
+    item.innerHTML = html;
+    grid.appendChild(item);
+  }
+
+  document.getElementById('galleryOverlay').classList.add('show');
+}
+
+function hideGallery() {
+  document.getElementById('galleryOverlay').classList.remove('show');
+}
+
+// ==================== Sound ====================
+var audioCtx = null;
+function getAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { return null; }
+  }
+  return audioCtx;
+}
+
+function playSound(type) {
+  if (!soundOn) return;
+  var ctx = getAudio();
+  if (!ctx) return;
+  var now = ctx.currentTime;
+
+  if (type === 'slide') {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.frequency.value = 200;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now); osc.stop(now + 0.08);
+  } else if (type === 'merge') {
+    var osc2 = ctx.createOscillator();
+    var gain2 = ctx.createGain();
+    osc2.frequency.setValueAtTime(440, now);
+    osc2.frequency.exponentialRampToValueAtTime(660, now + 0.1);
+    osc2.type = 'sine';
+    gain2.gain.setValueAtTime(0.1, now);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc2.connect(gain2); gain2.connect(ctx.destination);
+    osc2.start(now); osc2.stop(now + 0.15);
+  } else if (type === 'unlock') {
+    var notes = [523, 659, 784, 1047];
+    for (var i = 0; i < notes.length; i++) {
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.frequency.value = notes[i];
+      o.type = 'sine';
+      var t = now + i * 0.08;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.1, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + 0.2);
+    }
+  } else if (type === 'gameover') {
+    var dn = [440, 370, 311, 247];
+    for (var j = 0; j < dn.length; j++) {
+      var o2 = ctx.createOscillator();
+      var g2 = ctx.createGain();
+      o2.frequency.value = dn[j];
+      o2.type = 'sine';
+      var t2 = now + j * 0.12;
+      g2.gain.setValueAtTime(0.1, t2);
+      g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.2);
+      o2.connect(g2); g2.connect(ctx.destination);
+      o2.start(t2); o2.stop(t2 + 0.2);
+    }
+  } else if (type === 'win') {
+    var wn = [523, 659, 784, 1047, 1319];
+    for (var k = 0; k < wn.length; k++) {
+      var o3 = ctx.createOscillator();
+      var g3 = ctx.createGain();
+      o3.frequency.value = wn[k];
+      o3.type = 'triangle';
+      var t3 = now + k * 0.1;
+      g3.gain.setValueAtTime(0, t3);
+      g3.gain.linearRampToValueAtTime(0.1, t3 + 0.02);
+      g3.gain.exponentialRampToValueAtTime(0.001, t3 + 0.3);
+      o3.connect(g3); g3.connect(ctx.destination);
+      o3.start(t3); o3.stop(t3 + 0.3);
+    }
+  }
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  localStorage.setItem('sound2048', soundOn ? 'on' : 'off');
+  updateSoundUI();
+  if (soundOn) playSound('slide');
+}
+
+function updateSoundUI() {
+  document.getElementById('soundIcon').textContent = soundOn ? '🔊' : '🔇';
+  document.getElementById('soundText').textContent = soundOn ? '音效' : '静音';
+}
+
+// ==================== Score Popup ====================
+function showScorePopup(val) {
+  var popup = document.createElement('div');
+  popup.className = 'score-popup';
+  popup.textContent = '+' + val;
+
+  var wrap = document.getElementById('boardWrap');
+  var rect = wrap.getBoundingClientRect();
+  popup.style.left = (rect.width / 2 - 20) + 'px';
+  popup.style.top = '30px';
+
+  wrap.appendChild(popup);
+  setTimeout(function() { if (popup.parentNode) popup.remove(); }, 800);
+}
+
+// ==================== Toast ====================
+function showToast(msg) {
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function() { toast.classList.remove('show'); }, 2000);
+}
+
+// ==================== Touch Controls ====================
+function setupTouch() {
+  var boardEl = document.getElementById('boardWrap');
+  var startX = 0, startY = 0, startTime = 0;
+
+  boardEl.addEventListener('touchstart', function(e) {
+    var t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+    startTime = Date.now();
+  }, { passive: true });
+
+  boardEl.addEventListener('touchend', function(e) {
+    var t = e.changedTouches[0];
+    var dx = t.clientX - startX;
+    var dy = t.clientY - startY;
+    var dt = Date.now() - startTime;
+
+    var threshold = 25;
+    if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      move(dx > 0 ? 'right' : 'left');
+    } else {
+      move(dy > 0 ? 'down' : 'up');
+    }
+  }, { passive: true });
+
+  boardEl.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+}
+
+// ==================== Keyboard Controls ====================
+function setupKeyboard() {
+  document.addEventListener('keydown', function(e) {
+    var map = {
+      'ArrowLeft': 'left', 'ArrowRight': 'right',
+      'ArrowUp': 'up', 'ArrowDown': 'down',
+      'a': 'left', 'd': 'right', 'w': 'up', 's': 'down',
+      'A': 'left', 'D': 'right', 'W': 'up', 'S': 'down'
+    };
+    if (map[e.key]) {
+      e.preventDefault();
+      move(map[e.key]);
+    }
+  });
+}
+
+// ==================== Start ====================
+window.addEventListener('load', function() {
+  init();
+  window.addEventListener('resize', function() { renderBoard(); });
+  window.addEventListener('orientationchange', function() {
+    setTimeout(renderBoard, 200);
+  });
+});
+</script>
+</body>
+</html>
