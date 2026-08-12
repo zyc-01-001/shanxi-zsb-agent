@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="2048知识">
 <meta name="theme-color" content="#0a0e27">
 <meta name="description" content="2048知识合成 - 休闲数字合并游戏，合成数字解锁专升本知识点">
+<link rel="manifest" href="manifest_2048.json">
+<link rel="apple-touch-icon" href="icon-2048.jpg">
+<link rel="icon" type="image/jpeg" href="icon-2048.jpg">
 <title>2048 · 知识合成</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -883,6 +886,30 @@ window.addEventListener('load', function() {
   window.addEventListener('resize', function() { renderBoard(); });
   window.addEventListener('orientationchange', function() {
     setTimeout(renderBoard, 200);
+  });
+  // Register Service Worker for offline PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw_2048.js').then(function(reg) {
+      console.log('SW registered:', reg.scope);
+    }).catch(function(err) {
+      console.log('SW registration failed:', err);
+    });
+  }
+  // Listen for install prompt (Android Chrome)
+  var deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show install hint after 5 seconds if not installed
+    setTimeout(function() {
+      if (deferredPrompt) {
+        showToast('💡 点击浏览器菜单"安装应用"可添加到桌面');
+      }
+    }, 5000);
+  });
+  window.addEventListener('appinstalled', function() {
+    showToast('🎉 安装成功！');
+    deferredPrompt = null;
   });
 });
 </script>
